@@ -11,13 +11,16 @@ COPY package*.json ./
 RUN npm install
 
 # 5. アプリケーションのソースコードをコピー
-COPY . .
+# COPY . .
 
 # 6. Next.js アプリのビルド
-RUN npm run build
+# RUN npm run build
 
 # 7. アプリケーションのポート指定
 EXPOSE 3000
 
 # 8. コンテナ起動時に実行するコマンド
-CMD ["npm", "run", "start"]
+# CMD ["npm", "run", "start"]
+
+# 開発モードで起動（ホットリロード対応）
+CMD ["npm", "run", "dev"]
