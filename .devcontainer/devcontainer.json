@@ -4,5 +4,17 @@
     "service": "next-app",
     "workspaceFolder": "/app",
     "forwardPorts": [3000],
+    "customizations": {
+        "vscode": {
+            "extensions": ["dbaeumer.vscode-eslint", "esbenp.prettier-vscode"],
+            "settings": {
+                "editor.formatOnSave": true,
+                "editor.defaultFormatter": "esbenp.prettier-vscode",
+                "editor.codeActionsOnSave": {
+                    "source.fixAll.eslint": true
+                }
+            }
+        }
+    },
     "remoteUser": "node"
 }
