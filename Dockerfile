@@ -1,6 +1,8 @@
 # 1. ベースイメージの指定（Node.js 18）
 FROM node:18-alpine
 
+RUN apk add --no-cache git
+
 # 2. 作業ディレクトリを設定
 WORKDIR /app
 
