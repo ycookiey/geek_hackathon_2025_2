@@ -1,0 +1,8 @@
+{
+    "name": "Next.js Development",
+    "dockerComposeFile": "../docker-compose.yml",
+    "service": "next-app",
+    "workspaceFolder": "/app",
+    "forwardPorts": [3000],
+    "remoteUser": "node"
+}
