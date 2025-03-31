@@ -1,18 +1,16 @@
-import { DynamoDBClient, CreateTableCommand } from "@aws-sdk/client-dynamodb";
+import { DynamoDBClient, CreateTableCommand, CreateTableCommandInput } from "@aws-sdk/client-dynamodb";
 
-const client = new DynamoDBClient({ region: "ap-northeast-1" }); // 東京リージョン
-
-// 🎯 PurchaseRecord テーブル
-const purchaseRecordParams = {
+// PurchaseRecord テーブルのスキーマ
+const purchaseRecordSchema: CreateTableCommandInput = {
     TableName: "PurchaseRecord",
     KeySchema: [
-    { AttributeName: "userId", KeyType: "HASH" }, // パーティションキー
-    { AttributeName: "purchaseId", KeyType: "RANGE" }, // ソートキー
+    { AttributeName: "userId", KeyType: "HASH" },//パーテンションキー
+    { AttributeName: "purchaseId", KeyType: "RANGE" },//ソートキー
     ],
     AttributeDefinitions: [
-    { AttributeName: "userId", AttributeType: "S" },//S→string
+    { AttributeName: "userId", AttributeType: "S" },//S=String, N=Number, B=Binary
     { AttributeName: "purchaseId", AttributeType: "S" },
-    { AttributeName: "purchaseDate", AttributeType: "S" }, // GSI用の属性
+    { AttributeName: "purchaseDate", AttributeType: "S" },
     ],
     GlobalSecondaryIndexes: [
     {
@@ -22,14 +20,13 @@ const purchaseRecordParams = {
         { AttributeName: "purchaseDate", KeyType: "RANGE" },
         ],
         Projection: { ProjectionType: "ALL" },
-        ProvisionedThroughput: { ReadCapacityUnits: 1, WriteCapacityUnits: 1 },
     },
     ],
-    ProvisionedThroughput: { ReadCapacityUnits: 1, WriteCapacityUnits: 1 },//1 KB の項目を1秒に1回読む,1 KB の項目を1秒に1回書く
+    BillingMode: "PAY_PER_REQUEST",
 };
 
-// 🎯 InventoryItem テーブル
-const inventoryItemParams = {
+// InventoryItem テーブルのスキーマ
+const inventoryItemSchema: CreateTableCommandInput = {
     TableName: "InventoryItem",
     KeySchema: [
     { AttributeName: "userId", KeyType: "HASH" },
@@ -38,8 +35,8 @@ const inventoryItemParams = {
     AttributeDefinitions: [
     { AttributeName: "userId", AttributeType: "S" },
     { AttributeName: "itemId", AttributeType: "S" },
-    { AttributeName: "expiryDate", AttributeType: "S" }, // GSI用
-    { AttributeName: "storageLocation", AttributeType: "S" }, // GSI用
+    { AttributeName: "expiryDate", AttributeType: "S" },
+    { AttributeName: "storageLocation", AttributeType: "S" },
     ],
     GlobalSecondaryIndexes: [
     {
@@ -49,7 +46,6 @@ const inventoryItemParams = {
         { AttributeName: "expiryDate", KeyType: "RANGE" },
         ],
         Projection: { ProjectionType: "ALL" },
-        ProvisionedThroughput: { ReadCapacityUnits: 1, WriteCapacityUnits: 1 },
     },
     {
         IndexName: "StorageLocationIndex",
@@ -58,14 +54,13 @@ const inventoryItemParams = {
         { AttributeName: "storageLocation", KeyType: "RANGE" },
         ],
         Projection: { ProjectionType: "ALL" },
-        ProvisionedThroughput: { ReadCapacityUnits: 1, WriteCapacityUnits: 1 },
     },
     ],
-    ProvisionedThroughput: { ReadCapacityUnits: 1, WriteCapacityUnits: 1 },
+    BillingMode: "PAY_PER_REQUEST",
 };
 
-// 🎯 MealRecord テーブル
-const mealRecordParams = {
+// MealRecord テーブルのスキーマ
+const mealRecordSchema: CreateTableCommandInput = {
     TableName: "MealRecord",
     KeySchema: [
     { AttributeName: "userId", KeyType: "HASH" },
@@ -75,24 +70,8 @@ const mealRecordParams = {
     { AttributeName: "userId", AttributeType: "S" },
     { AttributeName: "recordDate", AttributeType: "S" },
     ],
-    ProvisionedThroughput: { ReadCapacityUnits: 1, WriteCapacityUnits: 1 },
+    BillingMode: "PAY_PER_REQUEST",
 };
 
-// 🎯 テーブル作成関数
-const createTable = async (params: any) => {
-    try {
-    const data = await client.send(new CreateTableCommand(params));
-    console.log(`✅ Table created: ${params.TableName}`);
-    } catch (error) {
-    console.error(`❌ Error creating table ${params.TableName}:`, error);
-    }
-};
-
-// 🎯 すべてのテーブルを作成
-const createAllTables = async () => {
-    await createTable(purchaseRecordParams);
-    await createTable(inventoryItemParams);
-    await createTable(mealRecordParams);
-};
-
-createAllTables();
+// エクスポート
+export { purchaseRecordSchema, inventoryItemSchema, mealRecordSchema };
