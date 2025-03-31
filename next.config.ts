@@ -1,7 +1,13 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+    webpack: (config) => {
+        config.watchOptions = {
+            poll: 300,
+            aggregateTimeout: 0,
+        };
+        return config;
+    },
 };
 
 export default nextConfig;
