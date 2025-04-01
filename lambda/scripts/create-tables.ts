@@ -8,6 +8,11 @@ import {
 // DynamoDB クライアントを初期化
 const client = new DynamoDBClient({
   region: "ap-northeast-1", // 東京リージョン
+    endpoint: "http://dynamodb:8000",
+    credentials: {
+        accessKeyId: "DUMMYIDEXAMPLE",
+        secretAccessKey: "DUMMYEXAMPLEKEY",
+    },
 });
 
 // 作成するテーブル一覧
