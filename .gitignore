@@ -40,3 +40,6 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 .history/
+
+# AWS SAM ビルド成果物
+.aws-sam/
