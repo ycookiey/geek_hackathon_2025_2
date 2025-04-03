@@ -4,12 +4,7 @@ import Link from "next/link";
 import React from "react";
 
 export type HeaderProps = {
-    activeItem?:
-        | "dashboard"
-        | "refrigerator"
-        | "meals"
-        | "recipes"
-        | "analysis";
+    activeItem?: "dashboard" | "inventory" | "meals" | "recipes" | "analysis";
     userName?: string;
     userInitials?: string;
 };
@@ -54,21 +49,19 @@ const Header: React.FC<HeaderProps> = ({
                             </li>
                             <li
                                 className={
-                                    activeItem === "refrigerator"
-                                        ? "relative"
-                                        : ""
+                                    activeItem === "inventory" ? "relative" : ""
                                 }
                             >
                                 <Link
-                                    href="/refrigerator"
+                                    href="/inventory"
                                     className={
-                                        activeItem === "refrigerator"
+                                        activeItem === "inventory"
                                             ? "text-white font-medium"
                                             : "text-gray-300 hover:text-white transition-colors"
                                     }
                                 >
                                     冷蔵庫
-                                    {activeItem === "refrigerator" && (
+                                    {activeItem === "inventory" && (
                                         <span className="absolute -bottom-1 left-0 w-full h-0.5 bg-gradient-to-r from-cyan-400 to-blue-500"></span>
                                     )}
                                 </Link>
