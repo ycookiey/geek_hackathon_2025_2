@@ -51,7 +51,7 @@ const inventoryItemSchema: CreateTableCommandInput = {
         IndexName: "StorageLocationIndex",
         KeySchema: [
         { AttributeName: "userId", KeyType: "HASH" },
-        { AttributeName: "storageLocation", KeyType: "RANGE" },
+        { AttributeName: "storageLocation", KeyType: "RANGE" },// ここはRANGEキーで良いか要検討 (通常はFilterに使うことが多い) by gemini2.5pro
         ],
         Projection: { ProjectionType: "ALL" },
     },
