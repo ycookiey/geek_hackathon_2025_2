@@ -60,7 +60,7 @@ const Header: React.FC<HeaderProps> = ({
                                             : "text-gray-300 hover:text-white transition-colors"
                                     }
                                 >
-                                    冷蔵庫
+                                    在庫
                                     {activeItem === "inventory" && (
                                         <span className="absolute -bottom-1 left-0 w-full h-0.5 bg-gradient-to-r from-cyan-400 to-blue-500"></span>
                                     )}
