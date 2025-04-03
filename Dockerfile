@@ -6,8 +6,14 @@ RUN apk add --no-cache git
 # 2. 作業ディレクトリを設定
 WORKDIR /app
 
+# ディレクトリの所有権をnodeユーザーに変更
+RUN mkdir -p /app/node_modules /app/.next && chown -R node:node /app
+
+# nodeユーザーに切り替え
+USER node
+
 # 3. package.json と package-lock.json をコピー
-COPY package*.json ./
+COPY --chown=node:node package*.json ./
 
 # 4. 依存関係をインストール
 RUN npm install
