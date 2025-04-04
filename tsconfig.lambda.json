@@ -1,0 +1,33 @@
+// tsconfig.lambda.json の例
+{
+    "extends": "./tsconfig.json", // ルートの tsconfig.json を継承
+    "compilerOptions": {
+      // --- Lambda用に上書きする設定 ---
+      "module": "CommonJS",     // Node.js/Lambda では CommonJS が安定動作しやすい
+      "target": "ES2022",       // Node.js 18 がサポートするバージョンに合わせる
+      "moduleResolution": "node", // CommonJS に合わせたモジュール解決方式
+      "outDir": "dist-lambda",  // JavaScriptファイルの出力先ディレクトリ (後で使う)
+      "sourceMap": true,        // デバッグ用にソースマップを出力
+      "noEmit": false,          // JavaScriptファイルを出力させる (重要！)
+      "isolatedModules": false, // CommonJS なら false で良い
+      // --- 必要に応じて上書きまたは削除 ---
+      "jsx": "react-jsx",       // Lambda では JSX は不要なので削除してもOK
+      "lib": ["esnext"],        // Lambda では DOM は不要
+      "plugins": [],            // Next.js プラグインは不要なので空にする
+      "paths": {}               // パスエイリアスを使わないなら空にする
+    },
+    // --- Lambdaに関連するファイルのみをコンパイル対象にする ---
+    "include": [
+      "lambda/**/*.ts",         // lambda ディレクトリ以下の .ts ファイル
+      "utils/**/*.ts"           // utils ディレクトリ以下の .ts ファイル (もしあれば)
+      // 他に Lambda 関数から参照するファイルがあれば追加
+    ],
+    // --- コンパイル対象から除外するもの ---
+    "exclude": [
+        "node_modules",
+        ".aws-sam",
+        ".next",
+      "src",                    // Next.js のフロントエンドコードを除外 (もしあれば)
+      "dist-lambda"             // 出力先ディレクトリ自体を除外
+    ]
+    }

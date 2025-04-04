@@ -43,3 +43,9 @@ next-env.d.ts
 
 # AWS SAM ビルド成果物
 .aws-sam/
+
+#lambdaでtscを実行したときに生成されるファイル群
+dist-lambda
+
+#lambda関数用のpackage.json
+lambda/functions/node_modules
