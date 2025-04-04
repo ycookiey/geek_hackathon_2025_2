@@ -66,7 +66,11 @@ export default function MealsPage() {
             });
         }
 
-        const remainingDays = 42 - days.length;
+        const totalDaysAdded = firstDayOfMonth + daysInMonth;
+        const neededRows = Math.ceil(totalDaysAdded / 7);
+        const totalCells = neededRows * 7;
+
+        const remainingDays = totalCells - days.length;
         for (let i = 1; i <= remainingDays; i++) {
             days.push({
                 date: new Date(currentYear, currentMonth + 1, i),
