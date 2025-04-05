@@ -8,7 +8,6 @@ import {
   UpdateCommand,
   DynamoDBDocumentClient,
 } from "@aws-sdk/lib-dynamodb";
-import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
 import { randomUUID } from "node:crypto";
 
 // --- 共通設定 ---
@@ -30,6 +29,36 @@ const corsHeaders = {
 };
 
 // --- 型定義 ---
+
+// Lambda Function URL イベント型定義
+interface LambdaFunctionURLEvent {
+  version: string;
+  routeKey: string;
+  rawPath: string;
+  rawQueryString: string;
+  headers: Record<string, string>;
+  queryStringParameters: Record<string, string> | null;
+  requestContext: {
+    accountId: string;
+    apiId: string;
+    domainName: string;
+    domainPrefix: string;
+    http: {
+      method: string;
+      path: string;
+      protocol: string;
+      sourceIp: string;
+      userAgent: string;
+    };
+    requestId: string;
+    routeKey: string;
+    stage: string;
+    time: string;
+    timeEpoch: number;
+  };
+  body: string;
+  isBase64Encoded: boolean;
+}
 
 interface InventoryItem {
   userId: string;
@@ -61,12 +90,27 @@ interface UpdateInventoryItemInput {
   memo?: string;
 }
 
-// --- エラーレスポンス生成ヘルパー ---
+// レスポンス型
+interface ApiResponse {
+  statusCode: number;
+  headers: Record<string, string>;
+  body: string;
+}
+
+// --- ヘルパー関数 ---
+
+// パスからitemIdを抽出
+const extractItemIdFromPath = (path: string): string | null => {
+  const matches = path.match(/\/inventory\/([^\/]+)$/);
+  return matches ? matches[1] : null;
+};
+
+// エラーレスポンス生成ヘルパー
 const createErrorResponse = (
   statusCode: number,
   message: string,
   error?: any
-): APIGatewayProxyResult => {
+): ApiResponse => {
   console.error(`Error ${statusCode}: ${message}`, error);
   return {
     statusCode,
@@ -81,11 +125,11 @@ const createErrorResponse = (
 // --- 各API処理関数 ---
 
 /**
- * 在庫アイテム追加 (POST /api/inventory)
+ * 在庫アイテム追加 (POST /inventory)
  */
 const createInventoryItem = async (
-  event: APIGatewayProxyEvent
-): Promise<APIGatewayProxyResult> => {
+  event: LambdaFunctionURLEvent
+): Promise<ApiResponse> => {
   const userId = event.queryStringParameters?.userId;
   if (!userId)
     return createErrorResponse(400, "Missing userId query parameter");
@@ -124,7 +168,7 @@ const createInventoryItem = async (
     updatedAt: now,
   };
 
-  const params = { TableName: tableName!, Item: itemToSave }; // tableNameはハンドラ冒頭でチェック済み
+  const params = { TableName: tableName!, Item: itemToSave };
 
   try {
     console.log("Putting item into DynamoDB:", JSON.stringify(params, null, 2));
@@ -141,17 +185,15 @@ const createInventoryItem = async (
 };
 
 /**
- * 在庫アイテム取得 (GET /api/inventory/:itemId)
+ * 在庫アイテム取得 (GET /inventory/:itemId)
  */
 const getInventoryItem = async (
-  event: APIGatewayProxyEvent
-): Promise<APIGatewayProxyResult> => {
+  event: LambdaFunctionURLEvent,
+  itemId: string
+): Promise<ApiResponse> => {
   const userId = event.queryStringParameters?.userId;
-  const itemId = event.pathParameters?.itemId;
-
   if (!userId)
     return createErrorResponse(400, "Missing userId query parameter");
-  if (!itemId) return createErrorResponse(400, "Missing itemId path parameter"); // 通常はAPI Gateway設定で保証
 
   const params = { TableName: tableName!, Key: { userId, itemId } };
 
@@ -179,11 +221,11 @@ const getInventoryItem = async (
 };
 
 /**
- * 在庫一覧取得 (GET /api/inventory)
+ * 在庫一覧取得 (GET /inventory)
  */
 const listInventoryItems = async (
-  event: APIGatewayProxyEvent
-): Promise<APIGatewayProxyResult> => {
+  event: LambdaFunctionURLEvent
+): Promise<ApiResponse> => {
   const userId = event.queryStringParameters?.userId;
   if (!userId)
     return createErrorResponse(400, "Missing userId query parameter");
@@ -215,17 +257,15 @@ const listInventoryItems = async (
 };
 
 /**
- * 在庫アイテム更新 (PUT /api/inventory/:itemId)
+ * 在庫アイテム更新 (PUT /inventory/:itemId)
  */
 const updateInventoryItem = async (
-  event: APIGatewayProxyEvent
-): Promise<APIGatewayProxyResult> => {
+  event: LambdaFunctionURLEvent,
+  itemId: string
+): Promise<ApiResponse> => {
   const userId = event.queryStringParameters?.userId;
-  const itemId = event.pathParameters?.itemId;
-
   if (!userId)
     return createErrorResponse(400, "Missing userId query parameter");
-  if (!itemId) return createErrorResponse(400, "Missing itemId path parameter");
   if (!event.body) return createErrorResponse(400, "Missing request body");
 
   let requestBody: UpdateInventoryItemInput;
@@ -310,17 +350,15 @@ const updateInventoryItem = async (
 };
 
 /**
- * 在庫アイテム削除 (DELETE /api/inventory/:itemId)
+ * 在庫アイテム削除 (DELETE /inventory/:itemId)
  */
 const deleteInventoryItem = async (
-  event: APIGatewayProxyEvent
-): Promise<APIGatewayProxyResult> => {
+  event: LambdaFunctionURLEvent,
+  itemId: string
+): Promise<ApiResponse> => {
   const userId = event.queryStringParameters?.userId;
-  const itemId = event.pathParameters?.itemId;
-
   if (!userId)
     return createErrorResponse(400, "Missing userId query parameter");
-  if (!itemId) return createErrorResponse(400, "Missing itemId path parameter");
 
   const params = {
     TableName: tableName!,
@@ -345,7 +383,6 @@ const deleteInventoryItem = async (
         message: "Inventory item deleted successfully",
         deletedItem: data.Attributes, // ReturnValues=ALL_OLD の場合
       }),
-      // body: '', // 204 の場合
     };
   } catch (error: any) {
     if (error.name === "ConditionalCheckFailedException") {
@@ -357,13 +394,12 @@ const deleteInventoryItem = async (
 
 // --- メインハンドラー (ルーター) ---
 export const handler = async (
-  event: APIGatewayProxyEvent
-): Promise<APIGatewayProxyResult> => {
+  event: LambdaFunctionURLEvent
+): Promise<ApiResponse> => {
   console.log("Received event:", JSON.stringify(event, null, 2));
 
   // 環境変数チェック
   if (!tableName) {
-    // このエラーはハンドラー関数の最初でチェックするのが一般的
     return createErrorResponse(
       500,
       "Internal server error: INVENTORY_TABLE_NAME environment variable is not set."
@@ -371,7 +407,7 @@ export const handler = async (
   }
 
   // OPTIONS メソッド (CORS プリフライトリクエスト) への対応
-  if (event.httpMethod === "OPTIONS") {
+  if (event.requestContext.http.method === "OPTIONS") {
     return {
       statusCode: 200,
       headers: corsHeaders,
@@ -379,35 +415,36 @@ export const handler = async (
     };
   }
 
-  // API Gateway v1 プロキシ統合を想定
-  const method = event.httpMethod;
-  // パスパラメータ itemId が存在するかどうかでリソースを判断
-  const hasItemId =
-    event.pathParameters?.itemId !== null &&
-    event.pathParameters?.itemId !== undefined;
+  const method = event.requestContext.http.method;
+  const path = event.rawPath;
+  
+  const itemId = extractItemIdFromPath(path);
+  const hasItemId = itemId !== null;
+
+  console.log(`Processing request: ${method} ${path} (itemId: ${itemId || 'none'})`);
 
   try {
     // --- ルーティング ---
-    if (method === "POST" && !hasItemId) {
-      // POST /api/inventory
+    if (method === "POST" && path === "/inventory") {
+      // POST /inventory
       return await createInventoryItem(event);
     } else if (method === "GET" && hasItemId) {
-      // GET /api/inventory/{itemId}
-      return await getInventoryItem(event);
-    } else if (method === "GET" && !hasItemId) {
-      // GET /api/inventory
+      // GET /inventory/{itemId}
+      return await getInventoryItem(event, itemId);
+    } else if (method === "GET" && path === "/inventory") {
+      // GET /inventory
       return await listInventoryItems(event);
     } else if (method === "PUT" && hasItemId) {
-      // PUT /api/inventory/{itemId}
-      return await updateInventoryItem(event);
+      // PUT /inventory/{itemId}
+      return await updateInventoryItem(event, itemId);
     } else if (method === "DELETE" && hasItemId) {
-      // DELETE /api/inventory/{itemId}
-      return await deleteInventoryItem(event);
+      // DELETE /inventory/{itemId}
+      return await deleteInventoryItem(event, itemId);
     } else {
       // マッチしないリクエスト
       return createErrorResponse(
         404,
-        `Not Found: The requested resource or method (${method} ${event.path}) was not found.`
+        `Not Found: The requested resource or method (${method} ${path}) was not found.`
       );
     }
   } catch (error) {
