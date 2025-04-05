@@ -9,6 +9,8 @@ import {
   DynamoDBDocumentClient,
 } from "@aws-sdk/lib-dynamodb";
 import { randomUUID } from "node:crypto";
+import { LambdaFunctionURLEvent, ApiResponse } from "../utils/types";
+import { createErrorResponse, createSuccessResponse } from "../utils/response";
 
 // --- 共通設定 ---
 
@@ -18,48 +20,9 @@ const client = new DynamoDBClient({
 });
 const docClient = DynamoDBDocumentClient.from(client);
 
-const tableName = "InventoryItem"
-
-// CORSヘッダー (全メソッド許可)
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*", // 必要に応じてより厳格なドメインを指定
-  "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
-  "Access-Control-Allow-Headers":
-    "Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token",
-};
+const tableName = "InventoryItem";
 
 // --- 型定義 ---
-
-// Lambda Function URL イベント型定義
-interface LambdaFunctionURLEvent {
-  version: string;
-  routeKey: string;
-  rawPath: string;
-  rawQueryString: string;
-  headers: Record<string, string>;
-  queryStringParameters: Record<string, string> | null;
-  requestContext: {
-    accountId: string;
-    apiId: string;
-    domainName: string;
-    domainPrefix: string;
-    http: {
-      method: string;
-      path: string;
-      protocol: string;
-      sourceIp: string;
-      userAgent: string;
-    };
-    requestId: string;
-    routeKey: string;
-    stage: string;
-    time: string;
-    timeEpoch: number;
-  };
-  body: string;
-  isBase64Encoded: boolean;
-}
-
 interface InventoryItem {
   userId: string;
   itemId: string;
@@ -90,36 +53,12 @@ interface UpdateInventoryItemInput {
   memo?: string;
 }
 
-// レスポンス型
-interface ApiResponse {
-  statusCode: number;
-  headers: Record<string, string>;
-  body: string;
-}
-
 // --- ヘルパー関数 ---
 
 // パスからitemIdを抽出
 const extractItemIdFromPath = (path: string): string | null => {
   const matches = path.match(/\/inventory\/([^\/]+)$/);
   return matches ? matches[1] : null;
-};
-
-// エラーレスポンス生成ヘルパー
-const createErrorResponse = (
-  statusCode: number,
-  message: string,
-  error?: any
-): ApiResponse => {
-  console.error(`Error ${statusCode}: ${message}`, error);
-  return {
-    statusCode,
-    headers: corsHeaders,
-    body: JSON.stringify({
-      message,
-      error: error instanceof Error ? error.message : String(error),
-    }),
-  };
 };
 
 // --- 各API処理関数 ---
@@ -168,17 +107,13 @@ const createInventoryItem = async (
     updatedAt: now,
   };
 
-  const params = { TableName: tableName!, Item: itemToSave };
+  const params = { TableName: tableName, Item: itemToSave };
 
   try {
     console.log("Putting item into DynamoDB:", JSON.stringify(params, null, 2));
     await docClient.send(new PutCommand(params));
     console.log("DynamoDB Put successful");
-    return {
-      statusCode: 201, // Created
-      headers: corsHeaders,
-      body: JSON.stringify(itemToSave),
-    };
+    return createSuccessResponse(201, itemToSave); // Created
   } catch (error) {
     return createErrorResponse(500, "Failed to create inventory item.", error);
   }
@@ -195,7 +130,7 @@ const getInventoryItem = async (
   if (!userId)
     return createErrorResponse(400, "Missing userId query parameter");
 
-  const params = { TableName: tableName!, Key: { userId, itemId } };
+  const params = { TableName: tableName, Key: { userId, itemId } };
 
   try {
     console.log("Getting item from DynamoDB:", JSON.stringify(params, null, 2));
@@ -203,11 +138,7 @@ const getInventoryItem = async (
     console.log("DynamoDB Get result:", JSON.stringify(data, null, 2));
 
     if (data.Item) {
-      return {
-        statusCode: 200,
-        headers: corsHeaders,
-        body: JSON.stringify(data.Item),
-      };
+      return createSuccessResponse(200, data.Item);
     } else {
       return createErrorResponse(404, "Inventory item not found");
     }
@@ -231,7 +162,7 @@ const listInventoryItems = async (
     return createErrorResponse(400, "Missing userId query parameter");
 
   const params = {
-    TableName: tableName!,
+    TableName: tableName,
     KeyConditionExpression: "userId = :uid",
     ExpressionAttributeValues: { ":uid": userId },
     // 必要に応じて他のパラメータ (ProjectionExpression, Limit, etc.) を追加
@@ -246,11 +177,7 @@ const listInventoryItems = async (
     console.log(
       `DynamoDB Query successful, found ${result.Items?.length ?? 0} items.`
     );
-    return {
-      statusCode: 200,
-      headers: corsHeaders,
-      body: JSON.stringify(result.Items || []), // Itemsがない場合は空配列
-    };
+    return createSuccessResponse(200, result.Items || []); // Itemsがない場合は空配列
   } catch (error) {
     return createErrorResponse(500, "Failed to fetch inventory list.", error);
   }
@@ -319,7 +246,7 @@ const updateInventoryItem = async (
   }
 
   const params = {
-    TableName: tableName!,
+    TableName: tableName,
     Key: { userId, itemId },
     UpdateExpression: updateExpression,
     // ExpressionAttributeNames が空でない場合のみ設定
@@ -336,11 +263,7 @@ const updateInventoryItem = async (
     console.log("Updating item in DynamoDB:", JSON.stringify(params, null, 2));
     const data = await docClient.send(new UpdateCommand(params));
     console.log("DynamoDB Update successful:", JSON.stringify(data, null, 2));
-    return {
-      statusCode: 200,
-      headers: corsHeaders,
-      body: JSON.stringify(data.Attributes),
-    };
+    return createSuccessResponse(200, data.Attributes);
   } catch (error: any) {
     if (error.name === "ConditionalCheckFailedException") {
       return createErrorResponse(404, "Inventory item not found");
@@ -361,7 +284,7 @@ const deleteInventoryItem = async (
     return createErrorResponse(400, "Missing userId query parameter");
 
   const params = {
-    TableName: tableName!,
+    TableName: tableName,
     Key: { userId, itemId },
     ConditionExpression: "attribute_exists(itemId)", // アイテムが存在することを確認
     ReturnValues: "ALL_OLD" as const, // 削除されたアイテム情報を返す場合
@@ -376,14 +299,10 @@ const deleteInventoryItem = async (
     console.log("DynamoDB Delete successful:", JSON.stringify(data, null, 2));
 
     // 削除成功レスポンス (削除されたアイテム情報を含むか、含まないか選択)
-    return {
-      statusCode: 200, // または 204 No Content
-      headers: corsHeaders,
-      body: JSON.stringify({
-        message: "Inventory item deleted successfully",
-        deletedItem: data.Attributes, // ReturnValues=ALL_OLD の場合
-      }),
-    };
+    return createSuccessResponse(200, {
+      message: "Inventory item deleted successfully",
+      deletedItem: data.Attributes, // ReturnValues=ALL_OLD の場合
+    });
   } catch (error: any) {
     if (error.name === "ConditionalCheckFailedException") {
       return createErrorResponse(404, "Inventory item not found");
@@ -392,67 +311,40 @@ const deleteInventoryItem = async (
   }
 };
 
-// --- メインハンドラー (ルーター) ---
-export const handler = async (
+// --- エクスポート用ルーターハンドラー ---
+// inventoryパスのルーティングを担当
+export const handleInventoryRoutes = async (
   event: LambdaFunctionURLEvent
 ): Promise<ApiResponse> => {
-  console.log("Received event:", JSON.stringify(event, null, 2));
-
-  // 環境変数チェック
-  if (!tableName) {
-    return createErrorResponse(
-      500,
-      "Internal server error: INVENTORY_TABLE_NAME environment variable is not set."
-    );
-  }
-
-  // OPTIONS メソッド (CORS プリフライトリクエスト) への対応
-  if (event.requestContext.http.method === "OPTIONS") {
-    return {
-      statusCode: 200,
-      headers: corsHeaders,
-      body: "",
-    };
-  }
-
+  console.log("Handling inventory route:", event.rawPath);
+  
   const method = event.requestContext.http.method;
   const path = event.rawPath;
   
   const itemId = extractItemIdFromPath(path);
   const hasItemId = itemId !== null;
 
-  console.log(`Processing request: ${method} ${path} (itemId: ${itemId || 'none'})`);
-
-  try {
-    // --- ルーティング ---
-    if (method === "POST" && path === "/inventory") {
-      // POST /inventory
-      return await createInventoryItem(event);
-    } else if (method === "GET" && hasItemId) {
-      // GET /inventory/{itemId}
-      return await getInventoryItem(event, itemId);
-    } else if (method === "GET" && path === "/inventory") {
-      // GET /inventory
-      return await listInventoryItems(event);
-    } else if (method === "PUT" && hasItemId) {
-      // PUT /inventory/{itemId}
-      return await updateInventoryItem(event, itemId);
-    } else if (method === "DELETE" && hasItemId) {
-      // DELETE /inventory/{itemId}
-      return await deleteInventoryItem(event, itemId);
-    } else {
-      // マッチしないリクエスト
-      return createErrorResponse(
-        404,
-        `Not Found: The requested resource or method (${method} ${path}) was not found.`
-      );
-    }
-  } catch (error) {
-    // 予期しない内部エラーの最終キャッチ
+  // --- ルーティング ---
+  if (method === "POST" && path === "/inventory") {
+    // POST /inventory
+    return await createInventoryItem(event);
+  } else if (method === "GET" && hasItemId) {
+    // GET /inventory/{itemId}
+    return await getInventoryItem(event, itemId);
+  } else if (method === "GET" && path === "/inventory") {
+    // GET /inventory
+    return await listInventoryItems(event);
+  } else if (method === "PUT" && hasItemId) {
+    // PUT /inventory/{itemId}
+    return await updateInventoryItem(event, itemId);
+  } else if (method === "DELETE" && hasItemId) {
+    // DELETE /inventory/{itemId}
+    return await deleteInventoryItem(event, itemId);
+  } else {
+    // マッチしないリクエスト
     return createErrorResponse(
-      500,
-      "An unexpected internal server error occurred.",
-      error
+      404,
+      `Not Found: The requested inventory resource or method (${method} ${path}) was not found.`
     );
   }
 };
