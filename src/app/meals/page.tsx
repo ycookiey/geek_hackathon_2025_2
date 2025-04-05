@@ -2,73 +2,52 @@
 
 import Header from "@/components/Header";
 import { motion, AnimatePresence } from "framer-motion";
-import {
-  useMealsCalendar,
-  CalendarDay /* フックから型をimport */,
-} from "./hooks/useMealsCalendar";
+import { useMealsCalendar } from "./hooks/useMealsCalendar";
 import CalendarGrid from "./components/CalendarGrid";
-import ExpandedDayView from "./components/ExpandedDayView"; // ★ 新しく import
-// ★ AddMealModal も後で import する
+import ExpandedDayView from "./components/ExpandedDayView";
+import AddMealModal from "./components/AddMealModal"; // ★ 新しく import
 
 export default function MealsPage() {
   const {
     // ... (他の状態や関数)
-    calendarData,
-    expandedDate,
-    handleCloseExpandedDay, // ExpandedDayView に渡す
-    isToday,
-    isSameDate,
-    getDayName,
-    getDayColor,
-    getMealTypeInfo,
-    handleShowAddMealModal, // ExpandedDayView に渡す
-    // ... (モーダル関連の state や handler)
+    showAddMeal, // モーダルの表示状態
+    handleCloseModal, // モーダルを閉じる関数
+    selectedDate, // モーダルに渡す選択された日付
+    mealType, // モーダルに渡す初期の食事タイプ
+    getMealTypeInfo, // モーダルに渡すヘルパー
+    // ★ モーダル内部で管理するため、ページからは不要になる可能性あり
+    // searchQuery, setSearchQuery, filteredMeals,
+    // ★ 代わりに実際の在庫データや検索関数を渡す必要がある
+    sampleMeals, // 現状はサンプルデータリストを渡す
+    handleAddMeal, // ★ モーダルに渡す追加処理関数
+    // ...
   } = useMealsCalendar();
 
-  // 選択されている日付のデータを取得するロジック
-  // (API連携後はフック内で管理する方が良いが、現状はここで計算)
-  const expandedDayData = useMemo(() => {
-    if (!expandedDate) return null;
-    // calendarData は weeks の配列なので flat() する
-    return (
-      calendarData.flat().find((d) => isSameDate(d.date, expandedDate)) || null
-    );
-  }, [expandedDate, calendarData, isSameDate]);
+  // ... (expandedDayData の計算など)
 
   return (
     <div className="min-h-screen ...">
       <Header activeItem="meals" />
       <main className="max-w-7xl mx-auto ...">
-        {/* --- 月ナビゲーション --- */}
-        {/* ... 省略 ... */}
-
-        {/* --- カレンダー本体 (CalendarGrid は使用済み) --- */}
-        <motion.div /* ... 省略 ... */>
-          <CalendarGrid /* ... props ... */ />
-        </motion.div>
-
-        {/* --- 展開された日付の詳細ビュー --- */}
-        {/* ★★★ ここを ExpandedDayView コンポーネントに置き換え ★★★ */}
-        <AnimatePresence mode="wait">
-          {expandedDate &&
-            expandedDayData && ( // データが存在する場合のみレンダリング
-              <ExpandedDayView
-                key={expandedDayData.date.toISOString()} // キーを渡して再マウントを促す
-                dayData={expandedDayData}
-                isToday={isToday}
-                getDayName={getDayName}
-                getDayColor={getDayColor}
-                getMealTypeInfo={getMealTypeInfo}
-                onClose={handleCloseExpandedDay}
-                onAddMealClick={handleShowAddMealModal}
-              />
-            )}
-        </AnimatePresence>
+        {/* ... 月ナビゲーション ... */}
+        {/* ... カレンダーグリッド (CalendarGrid使用済み) ... */}
+        {/* ... 展開表示 (ExpandedDayView使用済み) ... */}
 
         {/* --- 食事追加モーダル --- */}
-        {/* ★★★ 将来的にはこの AnimatePresence 部分を AddMealModal コンポーネントに切り出す ★★★ */}
+        {/* ★★★ ここを AddMealModal コンポーネントに置き換え ★★★ */}
         <AnimatePresence>
-          {/* ... モーダル表示のロジック (変更なし) ... */}
+          {showAddMeal &&
+            selectedDate && ( // showAddMeal で表示を制御
+              <AddMealModal
+                isOpen={showAddMeal}
+                onClose={handleCloseModal}
+                selectedDate={selectedDate}
+                initialMealType={mealType} // フックが持つ mealType を初期値として渡す
+                getMealTypeInfo={getMealTypeInfo}
+                sampleMeals={sampleMeals} // ★ 現状はサンプルデータ
+                onAddMeal={handleAddMeal} // ★ 追加処理関数
+              />
+            )}
         </AnimatePresence>
 
         {/* --- Floating Action Button --- */}
