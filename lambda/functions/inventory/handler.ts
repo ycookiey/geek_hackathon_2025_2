@@ -19,8 +19,7 @@ const client = new DynamoDBClient({
 });
 const docClient = DynamoDBDocumentClient.from(client);
 
-// 環境変数からテーブル名を取得
-const tableName = process.env.INVENTORY_TABLE_NAME;
+const tableName = "InventoryItem"
 
 // CORSヘッダー (全メソッド許可)
 const corsHeaders = {
