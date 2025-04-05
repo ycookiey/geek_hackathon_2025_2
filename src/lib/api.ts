@@ -1,6 +1,6 @@
 import { ApiErrorResponse } from "../types/api";
 
-const API_BASE_URL = process.env.API_BASE_URL;
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
 
 // TODO: 実際のアプリケーションでは認証機能から取得する
 export const getUserId = (): string => {
