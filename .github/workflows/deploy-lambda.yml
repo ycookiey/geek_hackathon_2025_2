@@ -68,6 +68,7 @@ jobs:
                   echo "Changed files detected: $CHANGED_FILES"
                   BUILD_TEMP_DIR="./lambda_deploy_temp"
                   mkdir -p $BUILD_TEMP_DIR
+
                   for ts_file_path in $CHANGED_FILES; do
                     echo "--------------------------------------------------"
                     echo "Processing function: $ts_file_path"
@@ -80,41 +81,89 @@ jobs:
                     zip_file_path="${BUILD_TEMP_DIR}/${function_name_suffix}.zip"
                     output_js_file="index.js"
                     lambda_handler="${output_js_file%.*}.handler"
+                    
                     echo "  Target AWS Lambda Function Name: $aws_function_name"
                     echo "  Build Output Directory: $build_output_dir"
                     echo "  Deployment Package (ZIP): $zip_file_path"
                     echo "  Expected Lambda Handler: $lambda_handler"
+                    
                     echo "  Building TypeScript to JavaScript..."
                     mkdir -p "$build_output_dir"
-                    (cd lambda/functions && npx esbuild "../${ts_file_path#lambda/}" --bundle "--outfile=../${build_output_dir}/${output_js_file}" --platform=node --format=cjs --external:@aws-sdk/* --minify --sourcemap)
+                    DEPLOY_TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+                    
+                    (cd lambda/functions && npx esbuild "../${ts_file_path#lambda/}" --bundle "--outfile=../${build_output_dir}/${output_js_file}" --platform=node --format=cjs --external:@aws-sdk/* --minify --sourcemap --banner:js="// Deployed at: ${DEPLOY_TIMESTAMP}" --define:__DEPLOYMENT_TIMESTAMP__="'${DEPLOY_TIMESTAMP}'")
+                    
                     if [ $? -ne 0 ]; then
                         echo "  [ERROR] esbuild failed for $ts_file_path. Aborting deployment." >&2
                         exit 1
                     fi
+                    
                     echo "  Build successful: ${build_output_dir}/${output_js_file}"
                     echo "  Creating deployment package..."
                     (cd "$build_output_dir" && zip -r "../${function_name_suffix}.zip" ./* )
+                    
                     if [ $? -ne 0 ]; then
                         echo "  [ERROR] Failed to create zip package '$zip_file_path' for $ts_file_path. Aborting deployment." >&2
                         exit 1
                     fi
+                    
                     if [ ! -f "$zip_file_path" ]; then
                          echo "  [ERROR] Zip package '$zip_file_path' not found after zip command. Aborting deployment." >&2
                          exit 1
                     fi
+                    
                     echo "  Deployment package created: $zip_file_path"
-                    echo "  Deploying to AWS Lambda function '$aws_function_name'..."
-                    aws lambda update-function-code \
-                      --function-name "$aws_function_name" \
-                      --zip-file "fileb://$zip_file_path" \
-                      --publish
+                    
+                    # Lambda 関数が存在するか確認
+                    if aws lambda get-function --function-name "$aws_function_name" &>/dev/null; then
+                        echo "  Updating existing Lambda function '$aws_function_name'..."
+                        aws lambda update-function-code \
+                          --function-name "$aws_function_name" \
+                          --zip-file "fileb://$zip_file_path" \
+                          --publish
+                    else
+                        echo "  Creating new Lambda function '$aws_function_name'..."
+                        aws lambda create-function \
+                          --function-name "$aws_function_name" \
+                          --runtime "nodejs18.x" \
+                          --role "${{ secrets.LAMBDA_EXECUTION_ROLE }}" \
+                          --handler "$lambda_handler" \
+                          --zip-file "fileb://$zip_file_path" \
+                          --timeout 30 \
+                          --memory-size 256
+                    fi
+                    
                     if [ $? -ne 0 ]; then
-                        echo "  [ERROR] Failed to deploy function '$aws_function_name' from $ts_file_path. Please check AWS permissions and function existence. Aborting deployment." >&2
+                        echo "  [ERROR] Failed to deploy function '$aws_function_name'. Aborting deployment." >&2
                         exit 1
                     else
                         echo "  Successfully deployed function '$aws_function_name'."
                     fi
+                    
+                    echo "  Configuring Lambda Function URL..."
+                    
+                    if aws lambda get-function-url-config --function-name "$aws_function_name" &>/dev/null; then
+                        echo "  Function URL already exists for '$aws_function_name', skipping creation."
+                    else
+                        echo "  Creating Function URL for '$aws_function_name'..."
+                        aws lambda create-function-url-config \
+                          --function-name "$aws_function_name" \
+                          --auth-type "NONE" \
+                          --cors '{"AllowOrigins": ["*"], "AllowMethods": ["*"], "AllowHeaders": ["*"], "ExposeHeaders": ["*"]}'
+                        
+                        aws lambda add-permission \
+                          --function-name "$aws_function_name" \
+                          --statement-id "FunctionURLAllowPublicAccess" \
+                          --action "lambda:InvokeFunctionUrl" \
+                          --principal "*" \
+                          --function-url-auth-type "NONE"
+                    fi
+                    
+                    FUNCTION_URL=$(aws lambda get-function-url-config --function-name "$aws_function_name" --query "FunctionUrl" --output text)
+                    echo "  Function URL: $FUNCTION_URL"
+                    
                   done
+
                   echo "--------------------------------------------------"
                   echo "Cleaning up temporary build directory..."
                   rm -rf $BUILD_TEMP_DIR
