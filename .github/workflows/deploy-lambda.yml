@@ -98,9 +98,13 @@ jobs:
                         exit 1
                     fi
                     
+                    echo "  Checking build output..."
+                    ls -la "${build_output_dir}/"
+                    
                     echo "  Build successful: ${build_output_dir}/${output_js_file}"
                     echo "  Creating deployment package..."
-                    (cd "$build_output_dir" && zip -r "../${function_name_suffix}.zip" ./* )
+                    
+                    (cd "$build_output_dir" && zip -r "../${function_name_suffix}.zip" .)
                     
                     if [ $? -ne 0 ]; then
                         echo "  [ERROR] Failed to create zip package '$zip_file_path' for $ts_file_path. Aborting deployment." >&2
@@ -112,9 +116,11 @@ jobs:
                          exit 1
                     fi
                     
+                    echo "  Checking zip file contents:"
+                    unzip -l "$zip_file_path"
+                    
                     echo "  Deployment package created: $zip_file_path"
                     
-                    # Lambda 関数が存在するか確認
                     if aws lambda get-function --function-name "$aws_function_name" &>/dev/null; then
                         echo "  Updating existing Lambda function '$aws_function_name'..."
                         aws lambda update-function-code \
