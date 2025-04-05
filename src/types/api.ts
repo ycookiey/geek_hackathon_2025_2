@@ -97,3 +97,18 @@ export interface ApiErrorResponse {
     message: string;
     error?: string;
 }
+
+export type FoodCategory =
+    | "野菜"
+    | "果物"
+    | "肉類"
+    | "魚介類"
+    | "乳製品"
+    | "穀物"
+    | "調味料"
+    | "その他";
+
+export interface FoodCategoryResponse {
+    foodName: string;
+    category: FoodCategory;
+}
