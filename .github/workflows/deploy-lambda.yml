@@ -1,0 +1,121 @@
+name: Deploy Changed Lambda Functions
+
+on:
+    push:
+        branches:
+            - main
+        paths:
+            - "lambda/functions/**.ts"
+
+jobs:
+    deploy-changed-functions:
+        name: Build and Deploy Changed Functions
+        runs-on: ubuntu-latest
+        permissions:
+            id-token: write
+            contents: read
+
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v4
+              with:
+                  fetch-depth: 0
+
+            - name: Get changed TypeScript files
+              id: changed-files
+              uses: tj-actions/changed-files@v44
+              with:
+                  files: lambda/functions/**.ts
+
+            - name: Check for changes
+              id: check-changes
+              run: |
+                  if [[ -z "${{ steps.changed-files.outputs.all_changed_files }}" ]]; then
+                    echo "No changes detected in Lambda functions."
+                    echo "any_changed=false" >> $GITHUB_OUTPUT
+                  else
+                    echo "Changes detected in Lambda functions: ${{ steps.changed-files.outputs.all_changed_files }}"
+                    echo "any_changed=true" >> $GITHUB_OUTPUT
+                  fi
+
+            - name: Set up Node.js
+              if: steps.check-changes.outputs.any_changed == 'true'
+              uses: actions/setup-node@v4
+              with:
+                  node-version: "18"
+                  cache: "npm"
+                  cache-dependency-path: lambda/functions/package-lock.json
+
+            - name: Configure AWS credentials
+              if: steps.check-changes.outputs.any_changed == 'true'
+              uses: aws-actions/configure-aws-credentials@v4
+              with:
+                  aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+                  aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+                  aws-region: ${{ secrets.AWS_REGION }}
+
+            - name: Install Lambda dependencies
+              if: steps.check-changes.outputs.any_changed == 'true'
+              working-directory: lambda/functions
+              run: npm ci
+
+            - name: Build and Deploy changed functions
+              if: steps.check-changes.outputs.any_changed == 'true'
+              env:
+                  CHANGED_FILES: ${{ steps.changed-files.outputs.all_changed_files }}
+              run: |
+                  echo "AWS CLI version: $(aws --version)"
+                  echo "Changed files detected: $CHANGED_FILES"
+                  BUILD_TEMP_DIR="./lambda_deploy_temp"
+                  mkdir -p $BUILD_TEMP_DIR
+                  for ts_file_path in $CHANGED_FILES; do
+                    echo "--------------------------------------------------"
+                    echo "Processing function: $ts_file_path"
+                    echo "--------------------------------------------------"
+                    relative_path=$(echo "$ts_file_path" | sed 's|^lambda/functions/||')
+                    path_no_ext=$(echo "$relative_path" | sed 's|\.ts$||')
+                    function_name_suffix=$(echo "$path_no_ext" | tr '/' '-')
+                    aws_function_name="lambda-functions-${function_name_suffix}"
+                    build_output_dir="${BUILD_TEMP_DIR}/${function_name_suffix}"
+                    zip_file_path="${BUILD_TEMP_DIR}/${function_name_suffix}.zip"
+                    output_js_file="index.js"
+                    lambda_handler="${output_js_file%.*}.handler"
+                    echo "  Target AWS Lambda Function Name: $aws_function_name"
+                    echo "  Build Output Directory: $build_output_dir"
+                    echo "  Deployment Package (ZIP): $zip_file_path"
+                    echo "  Expected Lambda Handler: $lambda_handler"
+                    echo "  Building TypeScript to JavaScript..."
+                    mkdir -p "$build_output_dir"
+                    (cd lambda/functions && npx esbuild "../${ts_file_path#lambda/}" --bundle "--outfile=../${build_output_dir}/${output_js_file}" --platform=node --format=cjs --external:@aws-sdk/* --minify --sourcemap)
+                    if [ $? -ne 0 ]; then
+                        echo "  [ERROR] esbuild failed for $ts_file_path. Aborting deployment." >&2
+                        exit 1
+                    fi
+                    echo "  Build successful: ${build_output_dir}/${output_js_file}"
+                    echo "  Creating deployment package..."
+                    (cd "$build_output_dir" && zip -r "../${function_name_suffix}.zip" ./* )
+                    if [ $? -ne 0 ]; then
+                        echo "  [ERROR] Failed to create zip package '$zip_file_path' for $ts_file_path. Aborting deployment." >&2
+                        exit 1
+                    fi
+                    if [ ! -f "$zip_file_path" ]; then
+                         echo "  [ERROR] Zip package '$zip_file_path' not found after zip command. Aborting deployment." >&2
+                         exit 1
+                    fi
+                    echo "  Deployment package created: $zip_file_path"
+                    echo "  Deploying to AWS Lambda function '$aws_function_name'..."
+                    aws lambda update-function-code \
+                      --function-name "$aws_function_name" \
+                      --zip-file "fileb://$zip_file_path" \
+                      --publish
+                    if [ $? -ne 0 ]; then
+                        echo "  [ERROR] Failed to deploy function '$aws_function_name' from $ts_file_path. Please check AWS permissions and function existence. Aborting deployment." >&2
+                        exit 1
+                    else
+                        echo "  Successfully deployed function '$aws_function_name'."
+                    fi
+                  done
+                  echo "--------------------------------------------------"
+                  echo "Cleaning up temporary build directory..."
+                  rm -rf $BUILD_TEMP_DIR
+                  echo "Deployment process finished successfully."
