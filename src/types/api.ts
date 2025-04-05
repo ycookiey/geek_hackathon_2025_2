@@ -2,6 +2,7 @@ export interface InventoryItem {
     userId: string;
     itemId: string;
     name: string;
+    category: FoodCategory;
     quantity: number;
     unit?: string;
     storageLocation?: string;
@@ -12,6 +13,7 @@ export interface InventoryItem {
 
 export interface CreateInventoryItemInput {
     name: string;
+    category: FoodCategory;
     quantity: number;
     unit?: string;
     storageLocation?: string;
@@ -20,6 +22,7 @@ export interface CreateInventoryItemInput {
 
 export interface UpdateInventoryItemInput {
     name?: string;
+    category?: FoodCategory;
     quantity?: number;
     unit?: string;
     storageLocation?: string;

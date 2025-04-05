@@ -27,6 +27,7 @@ interface InventoryItem {
   userId: string;
   itemId: string;
   name: string;
+  category: string;
   quantity: number;
   unit?: string;
   storageLocation?: string;
@@ -38,6 +39,7 @@ interface InventoryItem {
 // POST リクエストボディ用
 interface CreateInventoryItemInput {
   name: string;
+  category: string;
   quantity: number;
   unit?: string;
   storageLocation?: string;
@@ -47,6 +49,7 @@ interface CreateInventoryItemInput {
 // PUT リクエストボディ用 (全フィールド任意)
 interface UpdateInventoryItemInput {
   name?: string;
+  category?: string;
   quantity?: number;
   unit?: string;
   storageLocation?: string;
@@ -84,12 +87,13 @@ const createInventoryItem = async (
   // 必須項目チェック
   if (
     !requestBody.name ||
+    !requestBody.category ||
     typeof requestBody.quantity !== "number" ||
     requestBody.quantity < 0
   ) {
     return createErrorResponse(
       400,
-      "Missing or invalid required fields: name (string) and quantity (non-negative number)"
+      "Missing or invalid required fields: name (string), category (string) and quantity (non-negative number)"
     );
   }
 
@@ -99,6 +103,7 @@ const createInventoryItem = async (
     userId,
     itemId,
     name: requestBody.name,
+    category: requestBody.category,
     quantity: requestBody.quantity,
     unit: requestBody.unit,
     storageLocation: requestBody.storageLocation,
@@ -212,6 +217,7 @@ const updateInventoryItem = async (
   // 更新可能なフィールドをループ
   const allowedUpdateFields: (keyof UpdateInventoryItemInput)[] = [
     "name",
+    "category",
     "quantity",
     "unit",
     "storageLocation",
