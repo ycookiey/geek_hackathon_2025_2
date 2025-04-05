@@ -8,7 +8,10 @@ import InventoryFilters, {
     SortOption,
 } from "./components/InventoryFilters";
 import InventoryItemList from "./components/InventoryItemList";
-import { InventoryProvider, useInventory } from "@/state/inventory/inventoryContext";
+import {
+    InventoryProvider,
+    useInventory,
+} from "@/state/inventory/inventoryContext";
 import {
     filterInventoryItems,
     getCategoryInfo,
@@ -18,10 +21,13 @@ import LoadingState from "./components/LoadingState";
 import ErrorState from "./components/ErrorState";
 
 function InventoryPageContent() {
-    const { inventoryItems, isLoading, error, refreshInventory } = useInventory();
+    const { inventoryItems, isLoading, error, refreshInventory } =
+        useInventory();
     const [activeTab, setActiveTab] = useState<StorageLocation>("all");
     const [searchQuery, setSearchQuery] = useState("");
-    const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+    const [selectedCategory, setSelectedCategory] = useState<string | null>(
+        null
+    );
     const [sortBy, setSortBy] = useState<SortOption>("expiryDate");
     const [animateItems, setAnimateItems] = useState(false);
     const [isInitialLoad, setIsInitialLoad] = useState(true);
@@ -73,37 +79,47 @@ function InventoryPageContent() {
                 {isLoading && isInitialLoad ? (
                     <LoadingState />
                 ) : (
-                    <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-                        <div className="lg:col-span-1 space-y-6">
-                            <CategorySidebar
-                                categories={categories}
-                                selectedCategory={selectedCategory}
-                                setSelectedCategory={setSelectedCategory}
-                                getCategoryItemCount={getCategoryItemCountWrapper}
-                            />
-                        </div>
+                    <>
+                        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+                            <div className="lg:col-span-1">
+                                <div className="pt-26">
+                                    <CategorySidebar
+                                        categories={categories}
+                                        selectedCategory={selectedCategory}
+                                        setSelectedCategory={
+                                            setSelectedCategory
+                                        }
+                                        getCategoryItemCount={
+                                            getCategoryItemCountWrapper
+                                        }
+                                    />
+                                </div>
+                            </div>
 
-                        <div className="lg:col-span-3 space-y-6">
-                            <InventoryFilters
-                                activeTab={activeTab}
-                                setActiveTab={setActiveTab}
-                                searchQuery={searchQuery}
-                                setSearchQuery={setSearchQuery}
-                                sortBy={sortBy}
-                                setSortBy={setSortBy}
-                            />
+                            <div className="lg:col-span-3">
+                                <div className="mb-6">
+                                    <InventoryFilters
+                                        activeTab={activeTab}
+                                        setActiveTab={setActiveTab}
+                                        searchQuery={searchQuery}
+                                        setSearchQuery={setSearchQuery}
+                                        sortBy={sortBy}
+                                        setSortBy={setSortBy}
+                                    />
+                                </div>
 
-                            <InventoryItemList
-                                items={filteredItems}
-                                getCategoryInfo={getCategoryInfoWrapper}
-                                activeTab={activeTab}
-                                animateItems={animateItems}
-                                setAnimateItems={handleRefresh}
-                                isInitialLoad={isInitialLoad}
-                                isLoading={isLoading}
-                            />
+                                <InventoryItemList
+                                    items={filteredItems}
+                                    getCategoryInfo={getCategoryInfoWrapper}
+                                    activeTab={activeTab}
+                                    animateItems={animateItems}
+                                    setAnimateItems={handleRefresh}
+                                    isInitialLoad={isInitialLoad}
+                                    isLoading={isLoading}
+                                />
+                            </div>
                         </div>
-                    </div>
+                    </>
                 )}
             </main>
         </div>
