@@ -1,4 +1,4 @@
-import { ApiResponse, corsHeaders } from "./types";
+import { ApiResponse } from "./types";
 
 // エラーレスポンス生成ヘルパー
 export const createErrorResponse = (
@@ -9,7 +9,9 @@ export const createErrorResponse = (
     console.error(`Error ${statusCode}: ${message}`, error);
     return {
         statusCode,
-        headers: corsHeaders,
+        headers: {
+            "Content-Type": "application/json",
+        },
         body: JSON.stringify({
             message,
             error: error instanceof Error ? error.message : String(error),
@@ -17,14 +19,15 @@ export const createErrorResponse = (
     };
 };
 
-// 成功レスポンス生成ヘルパー
 export const createSuccessResponse = (
     statusCode: number,
     data: any
 ): ApiResponse => {
     return {
         statusCode,
-        headers: corsHeaders,
+        headers: {
+            "Content-Type": "application/json",
+        },
         body: JSON.stringify(data),
     };
 };
@@ -33,7 +36,7 @@ export const createSuccessResponse = (
 export const createOptionsResponse = (): ApiResponse => {
     return {
         statusCode: 200,
-        headers: corsHeaders,
+        headers: {},
         body: "",
     };
 };
