@@ -42,6 +42,7 @@ const inventoryItemSchema: CreateTableCommandInput = {
     { AttributeName: "expiryDate", AttributeType: "S" },
     { AttributeName: "storageLocation", AttributeType: "S" },
     { AttributeName: "sourcePurchaseId", AttributeType: "S" },
+    { AttributeName: "category", AttributeType: "S" }, // ★ 追加: 新しい属性
   ],
   GlobalSecondaryIndexes: [
     {
@@ -77,11 +78,23 @@ const mealRecordSchema: CreateTableCommandInput = {
   TableName: "MealRecord",
   KeySchema: [
     { AttributeName: "userId", KeyType: "HASH" },
-    { AttributeName: "recordDate", KeyType: "RANGE" },
+    { AttributeName: "recordId", KeyType: "RANGE" },
   ],
   AttributeDefinitions: [
     { AttributeName: "userId", AttributeType: "S" },
     { AttributeName: "recordDate", AttributeType: "S" },
+    { AttributeName: "recordId", AttributeType: "S" },
+  ],
+  GlobalSecondaryIndexes: [
+    // ★ 追加: GSI の定義
+    {
+      IndexName: "RecordDateIndex", // meals/index.ts で使用する名前
+      KeySchema: [
+        { AttributeName: "userId", KeyType: "HASH" }, // userId で絞り込み
+        { AttributeName: "recordDate", KeyType: "RANGE" }, // recordDate で範囲検索・ソート
+      ],
+      Projection: { ProjectionType: "ALL" }, // クエリ結果に全属性を含める
+    },
   ],
   BillingMode: "PAY_PER_REQUEST",
 };
