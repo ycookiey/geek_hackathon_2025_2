@@ -26,11 +26,11 @@ export const handler = async (
             deployedBy: "GitHub Actions Workflow",
             version: "1.0.0",
         });
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error("Error in timestamp function:", error);
         return createResponse(500, {
             message: "Internal server error",
-            error: error.message,
+            error: error instanceof Error ? error.message : "Unknown error",
         });
     }
 };
