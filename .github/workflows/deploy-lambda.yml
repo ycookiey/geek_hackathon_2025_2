@@ -33,6 +33,17 @@ jobs:
               with:
                   files: lambda/functions/**.ts
 
+            - name: Debug Changed Files Output
+              shell: bash
+              run: |
+                echo "--- Debugging tj-actions/changed-files outputs ---"
+                echo "Output 'all_changed_files': '${{ steps.changed-files.outputs.all_changed_files }}'"
+                echo "Output 'added_files': '${{ steps.changed-files.outputs.added_files }}'"
+                echo "Output 'modified_files': '${{ steps.changed-files.outputs.modified_files }}'"
+                echo "Output 'all_changed_and_modified_files': '${{ steps.changed-files.outputs.all_changed_and_modified_files }}'"
+
+                echo "--- End Debugging ---"
+
             - name: Set changed files or use input
               id: set-files
               run: |
