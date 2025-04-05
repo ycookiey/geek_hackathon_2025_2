@@ -8,35 +8,42 @@ import InventoryFilters, {
     SortOption,
 } from "./components/InventoryFilters";
 import InventoryItemList from "./components/InventoryItemList";
-import { InventoryItem } from "./models/InventoryItem";
+import { InventoryProvider, useInventory } from "@/state/inventory/inventoryContext";
 import {
     filterInventoryItems,
     getCategoryInfo,
     getCategoryItemCount,
 } from "./utils/inventoryUtils";
+import LoadingState from "./components/LoadingState";
+import ErrorState from "./components/ErrorState";
 
-export default function InventoryPage() {
+function InventoryPageContent() {
+    const { inventoryItems, isLoading, error, refreshInventory } = useInventory();
     const [activeTab, setActiveTab] = useState<StorageLocation>("all");
     const [searchQuery, setSearchQuery] = useState("");
-    const [selectedCategory, setSelectedCategory] = useState<string | null>(
-        null
-    );
+    const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
     const [sortBy, setSortBy] = useState<SortOption>("expiryDate");
     const [animateItems, setAnimateItems] = useState(false);
     const [isInitialLoad, setIsInitialLoad] = useState(true);
 
-    const [inventoryItems, setInventoryItems] = useState<InventoryItem[]>([]);
-
     useEffect(() => {
-        setIsInitialLoad(false);
+        if (!isLoading) {
+            setIsInitialLoad(false);
+            setAnimateItems(true);
+
+            const timer = setTimeout(() => {
+                setAnimateItems(false);
+            }, 1200);
+
+            return () => clearTimeout(timer);
+        }
+    }, [isLoading]);
+
+    const handleRefresh = async () => {
         setAnimateItems(true);
-
-        const timer = setTimeout(() => {
-            setAnimateItems(false);
-        }, 1200);
-
-        return () => clearTimeout(timer);
-    }, []);
+        await refreshInventory();
+        setTimeout(() => setAnimateItems(false), 1200);
+    };
 
     const filteredItems = filterInventoryItems(
         inventoryItems,
@@ -54,42 +61,59 @@ export default function InventoryPage() {
         return getCategoryItemCount(categoryId, inventoryItems);
     };
 
+    if (error) {
+        return <ErrorState error={error} onRetry={refreshInventory} />;
+    }
+
     return (
         <div className="min-h-screen bg-gradient-to-br from-[#0f172a] to-[#1e293b] text-white font-[family-name:var(--font-geist-sans)]">
             <Header activeItem="inventory" />
 
             <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-                    <div className="lg:col-span-1 space-y-6">
-                        <CategorySidebar
-                            categories={categories}
-                            selectedCategory={selectedCategory}
-                            setSelectedCategory={setSelectedCategory}
-                            getCategoryItemCount={getCategoryItemCountWrapper}
-                        />
-                    </div>
+                {isLoading && isInitialLoad ? (
+                    <LoadingState />
+                ) : (
+                    <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+                        <div className="lg:col-span-1 space-y-6">
+                            <CategorySidebar
+                                categories={categories}
+                                selectedCategory={selectedCategory}
+                                setSelectedCategory={setSelectedCategory}
+                                getCategoryItemCount={getCategoryItemCountWrapper}
+                            />
+                        </div>
 
-                    <div className="lg:col-span-3 space-y-6">
-                        <InventoryFilters
-                            activeTab={activeTab}
-                            setActiveTab={setActiveTab}
-                            searchQuery={searchQuery}
-                            setSearchQuery={setSearchQuery}
-                            sortBy={sortBy}
-                            setSortBy={setSortBy}
-                        />
+                        <div className="lg:col-span-3 space-y-6">
+                            <InventoryFilters
+                                activeTab={activeTab}
+                                setActiveTab={setActiveTab}
+                                searchQuery={searchQuery}
+                                setSearchQuery={setSearchQuery}
+                                sortBy={sortBy}
+                                setSortBy={setSortBy}
+                            />
 
-                        <InventoryItemList
-                            items={filteredItems}
-                            getCategoryInfo={getCategoryInfoWrapper}
-                            activeTab={activeTab}
-                            animateItems={animateItems}
-                            setAnimateItems={setAnimateItems}
-                            isInitialLoad={isInitialLoad}
-                        />
+                            <InventoryItemList
+                                items={filteredItems}
+                                getCategoryInfo={getCategoryInfoWrapper}
+                                activeTab={activeTab}
+                                animateItems={animateItems}
+                                setAnimateItems={handleRefresh}
+                                isInitialLoad={isInitialLoad}
+                                isLoading={isLoading}
+                            />
+                        </div>
                     </div>
-                </div>
+                )}
             </main>
         </div>
+    );
+}
+
+export default function InventoryPage() {
+    return (
+        <InventoryProvider>
+            <InventoryPageContent />
+        </InventoryProvider>
     );
 }
