@@ -200,6 +200,10 @@ jobs:
                           --function-name "$aws_function_name" \
                           --zip-file "fileb://$zip_file_path" \
                           --publish
+
+                        aws lambda update-function-configuration \
+                          --function-name "$aws_function_name" \
+                          --environment "Variables={GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}}"
                         update_status=$?
                     else
                         echo "  Creating new Lambda function '$aws_function_name'..."
@@ -210,7 +214,8 @@ jobs:
                           --handler "$lambda_handler" \
                           --zip-file "fileb://$zip_file_path" \
                           --timeout 30 \
-                          --memory-size 256
+                          --memory-size 256 \
+                          --environment "Variables={GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}}"
                         update_status=$?
                     fi
 
