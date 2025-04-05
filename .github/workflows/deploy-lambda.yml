@@ -238,8 +238,7 @@ jobs:
                               --statement-id "FunctionURLAllowPublicAccess" \
                               --action "lambda:InvokeFunctionUrl" \
                               --principal "*" \
-                              --function-url-auth-type "NONE" \
-                              --source-arn "$(aws lambda get-function --function-name "$aws_function_name" --query 'Configuration.FunctionArn' --output text)" || echo "  [INFO] Permission might already exist or failed to add."
+                              --function-url-auth-type "NONE" || echo "  [INFO] Permission might already exist or failed to add."
                         fi
                     else
                          echo "  Function URL already exists for '$aws_function_name'."
