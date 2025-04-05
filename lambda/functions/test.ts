@@ -14,15 +14,12 @@ export const handler = async (
     console.log("Lambda Function URL called:", new Date().toISOString());
     console.log("Request event:", JSON.stringify(event, null, 2));
 
-    // クエリパラメータでフォーマットを指定可能にする
     const format = event.queryStringParameters?.format || "iso";
 
     try {
-        // 現在のタイムスタンプを取得
         const now = new Date();
         let formattedTime;
 
-        // フォーマットに応じて時刻を整形
         switch (format) {
             case "unix":
                 formattedTime = Math.floor(now.getTime() / 1000);
@@ -44,7 +41,6 @@ export const handler = async (
                 break;
         }
 
-        // GitHub Actions テスト用のレスポンスを返す
         return createResponse(200, {
             message: "Lambda Function URL API successfully invoked!",
             timestamp: formattedTime,
@@ -53,7 +49,7 @@ export const handler = async (
             source_ip: event.requestContext?.http?.sourceIp || "unknown",
             user_agent: event.requestContext?.http?.userAgent || "unknown",
             version: "1.0.0",
-            deployed_at: "__DEPLOYMENT_TIMESTAMP__", // デプロイ時に置換される想定
+            deployed_at: "__DEPLOYMENT_TIMESTAMP__",
         });
     } catch (error: any) {
         console.error("Error in timestamp function:", error);
