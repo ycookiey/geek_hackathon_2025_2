@@ -3,6 +3,7 @@ import { createErrorResponse, createOptionsResponse } from "./utils/response";
 import { handleInventoryRoutes } from "./inventory";
 import { handlePurchaseRoutes } from "./purchases";
 import { handleMealRoutes } from "./meals";
+import { handleFoodCategoryRoutes } from "./food-category";
 
 /**
  * メインルーターハンドラー
@@ -31,6 +32,8 @@ export const handler = async (
             return await handlePurchaseRoutes(event);
         } else if (path.startsWith("/meals")) {
             return await handleMealRoutes(event);
+        } else if (path.startsWith("/food-category")) {
+            return await handleFoodCategoryRoutes(event);
         } else if (path === "/health" || path === "/") {
             // ヘルスチェックエンドポイント
             return {
