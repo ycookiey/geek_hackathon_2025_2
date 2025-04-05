@@ -27,44 +27,72 @@ jobs:
               with:
                   fetch-depth: 0
 
-            - name: Get changed TypeScript files
-              id: changed-files
-              uses: tj-actions/changed-files@v44
-              with:
-                  files: lambda/functions/**.ts
-
-            - name: Debug Changed Files Output
+            - name: Get changed TypeScript files using git diff
+              id: changed-files-git
               shell: bash
               run: |
-                echo "--- Debugging tj-actions/changed-files outputs ---"
-                echo "Output 'all_changed_files': '${{ steps.changed-files.outputs.all_changed_files }}'"
-                echo "Output 'added_files': '${{ steps.changed-files.outputs.added_files }}'"
-                echo "Output 'modified_files': '${{ steps.changed-files.outputs.modified_files }}'"
-                echo "Output 'all_changed_and_modified_files': '${{ steps.changed-files.outputs.all_changed_and_modified_files }}'"
+                  echo "Event type: ${{ github.event_name }}"
+                  changed_files=""
 
-                echo "--- End Debugging ---"
+                  if [[ "${{ github.event_name }}" == "push" ]]; then
+                    echo "Comparing commits ${{ github.event.before }} and ${{ github.sha }}"
+                    before_sha="${{ github.event.before }}"
+                    if [[ "$before_sha" == "0000000000000000000000000000000000000000" ]]; then
+                      echo "Initial push detected or 'before' SHA is zero. Comparing against HEAD~1."
+                      changed_files=$(git diff-tree --no-commit-id --name-only -r HEAD --diff-filter=ACMR -- 'lambda/functions/**/*.ts')
+                      if [[ $? -ne 0 ]]; then
+                          echo "Warning: Failed to get diff for initial commit using diff-tree. Trying ls-files."
+                          changed_files=$(git ls-files 'lambda/functions/**/*.ts')
+                      fi
+                    else
+                      changed_files=$(git diff --name-only --diff-filter=ACMR "$before_sha" "${{ github.sha }}" -- 'lambda/functions/**/*.ts')
+                    fi
+                  elif [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+                     echo "Workflow dispatch event. Files will be determined by input or left empty."
+                     changed_files=""
+                  else
+                     echo "Unsupported event type: ${{ github.event_name }}. No files will be processed."
+                     changed_files=""
+                  fi
+
+                  echo "Raw changed files list:"
+                  echo "$changed_files"
+                  echo "files<<EOF" >> $GITHUB_OUTPUT
+                  echo "$changed_files" >> $GITHUB_OUTPUT
+                  echo "EOF" >> $GITHUB_OUTPUT
 
             - name: Set changed files or use input
               id: set-files
               run: |
-                  if [[ -n "${{ github.event.inputs.specific_file }}" ]]; then
-                    echo "Changed files overridden by manual input: ${{ github.event.inputs.specific_file }}"
-                    echo "files=${{ github.event.inputs.specific_file }}" >> $GITHUB_OUTPUT
+                  manual_input="${{ github.event.inputs.specific_file }}"
+                  git_diff_files="${{ steps.changed-files-git.outputs.files }}"
+
+                  output_files=""
+                  if [[ -n "$manual_input" ]]; then
+                    echo "Changed files overridden by manual input: $manual_input"
+                    output_files="$manual_input"
                   else
-                    CHANGED_FILES="${{ steps.changed-files.outputs.all_changed_files }}"
-                    echo "Detected changed files: $CHANGED_FILES"
-                    echo "files=$CHANGED_FILES" >> $GITHUB_OUTPUT
+                    echo "Using files detected by git diff."
+                    output_files="$git_diff_files"
                   fi
+
+                  echo "Files set for processing (raw):"
+                  echo "$output_files"
+                  echo "files<<EOF" >> $GITHUB_OUTPUT
+                  echo "$output_files" >> $GITHUB_OUTPUT
+                  echo "EOF" >> $GITHUB_OUTPUT
+                  echo "Files to process (space-separated for logs): $(echo "$output_files" | paste -sd ' ')"
 
             - name: Check for changes
               id: check-changes
               run: |
-                  if [[ -z "${{ steps.set-files.outputs.files }}" ]]; then
+                  if [[ -n "${{ steps.set-files.outputs.files }}" ]]; then
+                    echo "Files to process:"
+                    echo "${{ steps.set-files.outputs.files }}" | sed 's/^/  /'
+                    echo "any_changed=true" >> $GITHUB_OUTPUT
+                  else
                     echo "No files to process."
                     echo "any_changed=false" >> $GITHUB_OUTPUT
-                  else
-                    echo "Files to process: ${{ steps.set-files.outputs.files }}"
-                    echo "any_changed=true" >> $GITHUB_OUTPUT
                   fi
 
             - name: Set up Node.js
@@ -94,20 +122,27 @@ jobs:
                   CHANGED_FILES: ${{ steps.set-files.outputs.files }}
               run: |
                   echo "AWS CLI version: $(aws --version)"
-                  echo "Files to process: $CHANGED_FILES"
+                  echo "Files to process (from env var):"
+                  echo "$CHANGED_FILES" | sed 's/^/  /'
                   BUILD_TEMP_DIR="./lambda_deploy_temp"
                   mkdir -p $BUILD_TEMP_DIR
+                  deploy_errors=0
 
-                  for ts_file_path in $CHANGED_FILES; do
+                  echo "$CHANGED_FILES" | while IFS= read -r ts_file_path; do
+                    if [[ -z "$ts_file_path" ]]; then
+                      continue
+                    fi
+
                     echo "--------------------------------------------------"
                     echo "Processing function: $ts_file_path"
                     echo "--------------------------------------------------"
-                    
+
                     if [ ! -f "$ts_file_path" ]; then
                       echo "  [ERROR] File does not exist: $ts_file_path. Skipping." >&2
+                      deploy_errors=$((deploy_errors + 1))
                       continue
                     fi
-                    
+
                     relative_path=$(echo "$ts_file_path" | sed 's|^lambda/functions/||')
                     path_no_ext=$(echo "$relative_path" | sed 's|\.ts$||')
                     function_name_suffix=$(echo "$path_no_ext" | tr '/' '-')
@@ -116,57 +151,56 @@ jobs:
                     zip_file_path="${BUILD_TEMP_DIR}/${function_name_suffix}.zip"
                     output_js_file="index.js"
                     lambda_handler="${output_js_file%.*}.handler"
-                    
+
                     echo "  Target AWS Lambda Function Name: $aws_function_name"
                     echo "  Build Output Directory: $build_output_dir"
                     echo "  Deployment Package (ZIP): $zip_file_path"
                     echo "  Expected Lambda Handler: $lambda_handler"
-                    
+
                     echo "  Building TypeScript to JavaScript..."
                     mkdir -p "$build_output_dir"
                     DEPLOY_TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
-                    
+
                     npx esbuild "${ts_file_path}" --bundle "--outfile=${build_output_dir}/${output_js_file}" --platform=node --format=cjs --external:@aws-sdk/* --minify --sourcemap --banner:js="// Deployed at: ${DEPLOY_TIMESTAMP}" --define:__DEPLOYMENT_TIMESTAMP__="'${DEPLOY_TIMESTAMP}'"
-                    
+
                     if [ $? -ne 0 ]; then
-                        echo "  [ERROR] esbuild failed for $ts_file_path. Aborting deployment." >&2
-                        exit 1
+                        echo "  [ERROR] esbuild failed for $ts_file_path. Skipping deployment for this function." >&2
+                        deploy_errors=$((deploy_errors + 1))
+                        continue
                     fi
-                    
+
                     echo "  Checking build output..."
                     ls -la "${build_output_dir}/"
-                    
                     if [ ! -f "${build_output_dir}/${output_js_file}" ]; then
-                        echo "  [ERROR] Expected output file '${build_output_dir}/${output_js_file}' not found. Aborting deployment." >&2
-                        exit 1
+                        echo "  [ERROR] Expected output file '${build_output_dir}/${output_js_file}' not found. Skipping deployment for this function." >&2
+                        deploy_errors=$((deploy_errors + 1))
+                        continue
                     fi
-                    
                     echo "  Build successful: ${build_output_dir}/${output_js_file}"
+
                     echo "  Creating deployment package..."
-                    
                     (cd "$build_output_dir" && zip -r "../${function_name_suffix}.zip" index.js index.js.map)
-                    
                     if [ $? -ne 0 ]; then
-                        echo "  [ERROR] Failed to create zip package '$zip_file_path' for $ts_file_path. Aborting deployment." >&2
-                        exit 1
+                        echo "  [ERROR] Failed to create zip package '$zip_file_path' for $ts_file_path. Skipping deployment for this function." >&2
+                        deploy_errors=$((deploy_errors + 1))
+                        continue
                     fi
-                    
                     if [ ! -f "$zip_file_path" ]; then
-                         echo "  [ERROR] Zip package '$zip_file_path' not found after zip command. Aborting deployment." >&2
-                         exit 1
+                         echo "  [ERROR] Zip package '$zip_file_path' not found after zip command. Skipping deployment for this function." >&2
+                         deploy_errors=$((deploy_errors + 1))
+                         continue
                     fi
-                    
                     echo "  Checking zip file contents:"
                     unzip -l "$zip_file_path"
-                    
                     echo "  Deployment package created: $zip_file_path"
-                    
+
                     if aws lambda get-function --function-name "$aws_function_name" &>/dev/null; then
                         echo "  Updating existing Lambda function '$aws_function_name'..."
                         aws lambda update-function-code \
                           --function-name "$aws_function_name" \
                           --zip-file "fileb://$zip_file_path" \
                           --publish
+                        update_status=$?
                     else
                         echo "  Creating new Lambda function '$aws_function_name'..."
                         aws lambda create-function \
@@ -177,40 +211,52 @@ jobs:
                           --zip-file "fileb://$zip_file_path" \
                           --timeout 30 \
                           --memory-size 256
+                        update_status=$?
                     fi
-                    
-                    if [ $? -ne 0 ]; then
-                        echo "  [ERROR] Failed to deploy function '$aws_function_name'. Aborting deployment." >&2
-                        exit 1
+
+                    if [ $update_status -ne 0 ]; then
+                        echo "  [ERROR] Failed to deploy function '$aws_function_name'. Check AWS logs for details." >&2
+                        deploy_errors=$((deploy_errors + 1))
+                        continue
                     else
                         echo "  Successfully deployed function '$aws_function_name'."
                     fi
-                    
+
                     echo "  Configuring Lambda Function URL..."
-                    
-                    if aws lambda get-function-url-config --function-name "$aws_function_name" &>/dev/null; then
-                        echo "  Function URL already exists for '$aws_function_name', skipping creation."
-                    else
+                    if ! aws lambda get-function-url-config --function-name "$aws_function_name" &>/dev/null; then
                         echo "  Creating Function URL for '$aws_function_name'..."
                         aws lambda create-function-url-config \
                           --function-name "$aws_function_name" \
                           --auth-type "NONE" \
                           --cors '{"AllowOrigins": ["*"], "AllowMethods": ["*"], "AllowHeaders": ["*"], "ExposeHeaders": ["*"]}'
-                        
-                        aws lambda add-permission \
-                          --function-name "$aws_function_name" \
-                          --statement-id "FunctionURLAllowPublicAccess" \
-                          --action "lambda:InvokeFunctionUrl" \
-                          --principal "*" \
-                          --function-url-auth-type "NONE"
+                        if [ $? -ne 0 ]; then
+                            echo "  [WARNING] Failed to create Function URL for '$aws_function_name'." >&2
+                        else
+                            echo "  Adding permission for Function URL..."
+                            aws lambda add-permission \
+                              --function-name "$aws_function_name" \
+                              --statement-id "FunctionURLAllowPublicAccess" \
+                              --action "lambda:InvokeFunctionUrl" \
+                              --principal "*" \
+                              --function-url-auth-type "NONE" \
+                              --source-arn "$(aws lambda get-function --function-name "$aws_function_name" --query 'Configuration.FunctionArn' --output text)" || echo "  [INFO] Permission might already exist or failed to add."
+                        fi
+                    else
+                         echo "  Function URL already exists for '$aws_function_name'."
                     fi
-                    
-                    FUNCTION_URL=$(aws lambda get-function-url-config --function-name "$aws_function_name" --query "FunctionUrl" --output text)
+
+                    FUNCTION_URL=$(aws lambda get-function-url-config --function-name "$aws_function_name" --query "FunctionUrl" --output text 2>/dev/null || echo "N/A")
                     echo "  Function URL: $FUNCTION_URL"
-                    
+
                   done
 
                   echo "--------------------------------------------------"
                   echo "Cleaning up temporary build directory..."
                   rm -rf $BUILD_TEMP_DIR
-                  echo "Deployment process finished successfully."
+
+                  if [ $deploy_errors -gt 0 ]; then
+                    echo "[ERROR] Deployment process completed with $deploy_errors error(s)." >&2
+                    exit 1
+                  else
+                    echo "Deployment process finished successfully."
+                  fi
