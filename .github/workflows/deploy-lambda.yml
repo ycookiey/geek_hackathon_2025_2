@@ -6,6 +6,12 @@ on:
             - main
         paths:
             - "lambda/functions/**.ts"
+    workflow_dispatch:
+        inputs:
+            specific_file:
+                description: "特定のTypeScriptファイルを実行する場合はパスを指定（例: lambda/functions/test.ts）"
+                required: false
+                default: "lambda/functions/test.ts"
 
 jobs:
     deploy-changed-functions:
@@ -27,14 +33,26 @@ jobs:
               with:
                   files: lambda/functions/**.ts
 
+            - name: Set changed files or use input
+              id: set-files
+              run: |
+                  if [[ -n "${{ github.event.inputs.specific_file }}" ]]; then
+                    echo "Changed files overridden by manual input: ${{ github.event.inputs.specific_file }}"
+                    echo "files=${{ github.event.inputs.specific_file }}" >> $GITHUB_OUTPUT
+                  else
+                    CHANGED_FILES="${{ steps.changed-files.outputs.all_changed_files }}"
+                    echo "Detected changed files: $CHANGED_FILES"
+                    echo "files=$CHANGED_FILES" >> $GITHUB_OUTPUT
+                  fi
+
             - name: Check for changes
               id: check-changes
               run: |
-                  if [[ -z "${{ steps.changed-files.outputs.all_changed_files }}" ]]; then
-                    echo "No changes detected in Lambda functions."
+                  if [[ -z "${{ steps.set-files.outputs.files }}" ]]; then
+                    echo "No files to process."
                     echo "any_changed=false" >> $GITHUB_OUTPUT
                   else
-                    echo "Changes detected in Lambda functions: ${{ steps.changed-files.outputs.all_changed_files }}"
+                    echo "Files to process: ${{ steps.set-files.outputs.files }}"
                     echo "any_changed=true" >> $GITHUB_OUTPUT
                   fi
 
@@ -62,10 +80,10 @@ jobs:
             - name: Build and Deploy changed functions
               if: steps.check-changes.outputs.any_changed == 'true'
               env:
-                  CHANGED_FILES: ${{ steps.changed-files.outputs.all_changed_files }}
+                  CHANGED_FILES: ${{ steps.set-files.outputs.files }}
               run: |
                   echo "AWS CLI version: $(aws --version)"
-                  echo "Changed files detected: $CHANGED_FILES"
+                  echo "Files to process: $CHANGED_FILES"
                   BUILD_TEMP_DIR="./lambda_deploy_temp"
                   mkdir -p $BUILD_TEMP_DIR
 
@@ -73,6 +91,12 @@ jobs:
                     echo "--------------------------------------------------"
                     echo "Processing function: $ts_file_path"
                     echo "--------------------------------------------------"
+                    
+                    if [ ! -f "$ts_file_path" ]; then
+                      echo "  [ERROR] File does not exist: $ts_file_path. Skipping." >&2
+                      continue
+                    fi
+                    
                     relative_path=$(echo "$ts_file_path" | sed 's|^lambda/functions/||')
                     path_no_ext=$(echo "$relative_path" | sed 's|\.ts$||')
                     function_name_suffix=$(echo "$path_no_ext" | tr '/' '-')
@@ -91,7 +115,7 @@ jobs:
                     mkdir -p "$build_output_dir"
                     DEPLOY_TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
                     
-                    (cd lambda/functions && npx esbuild "../${ts_file_path#lambda/}" --bundle "--outfile=../${build_output_dir}/${output_js_file}" --platform=node --format=cjs --external:@aws-sdk/* --minify --sourcemap --banner:js="// Deployed at: ${DEPLOY_TIMESTAMP}" --define:__DEPLOYMENT_TIMESTAMP__="'${DEPLOY_TIMESTAMP}'")
+                    npx esbuild "${ts_file_path}" --bundle "--outfile=${build_output_dir}/${output_js_file}" --platform=node --format=cjs --external:@aws-sdk/* --minify --sourcemap --banner:js="// Deployed at: ${DEPLOY_TIMESTAMP}" --define:__DEPLOYMENT_TIMESTAMP__="'${DEPLOY_TIMESTAMP}'"
                     
                     if [ $? -ne 0 ]; then
                         echo "  [ERROR] esbuild failed for $ts_file_path. Aborting deployment." >&2
@@ -101,10 +125,15 @@ jobs:
                     echo "  Checking build output..."
                     ls -la "${build_output_dir}/"
                     
+                    if [ ! -f "${build_output_dir}/${output_js_file}" ]; then
+                        echo "  [ERROR] Expected output file '${build_output_dir}/${output_js_file}' not found. Aborting deployment." >&2
+                        exit 1
+                    fi
+                    
                     echo "  Build successful: ${build_output_dir}/${output_js_file}"
                     echo "  Creating deployment package..."
                     
-                    (cd "$build_output_dir" && zip -r "../${function_name_suffix}.zip" .)
+                    (cd "$build_output_dir" && zip -r "../${function_name_suffix}.zip" index.js index.js.map)
                     
                     if [ $? -ne 0 ]; then
                         echo "  [ERROR] Failed to create zip package '$zip_file_path' for $ts_file_path. Aborting deployment." >&2
