@@ -4,6 +4,10 @@ import type {
 } from "aws-lambda";
 import { createResponse } from "../../utils/response.js";
 
+/**
+ * Lambda Function URL を使用したタイムスタンプ API 関数
+ * このファイルは GitHub Actions のワークフローテスト用です
+ */
 export const handler = async (
     event: APIGatewayProxyEventV2
 ): Promise<APIGatewayProxyResultV2> => {
