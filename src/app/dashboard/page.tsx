@@ -13,6 +13,7 @@ import {
     DashboardProvider,
     useDashboard,
 } from "@/state/dashboard/dashboardContext";
+import { WidgetProvider } from "@/components/widgets/WidgetManager";
 
 function DashboardContent() {
     const {
@@ -74,8 +75,10 @@ function DashboardContent() {
 
 export default function Dashboard() {
     return (
-        <DashboardProvider>
-            <DashboardContent />
-        </DashboardProvider>
+        <WidgetProvider>
+            <DashboardProvider>
+                <DashboardContent />
+            </DashboardProvider>
+        </WidgetProvider>
     );
 }

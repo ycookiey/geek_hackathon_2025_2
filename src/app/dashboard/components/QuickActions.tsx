@@ -1,13 +1,36 @@
 "use client";
 
+import { useWidgets } from "@/components/widgets/WidgetManager";
+
 export default function QuickActions() {
+    const { openWidget } = useWidgets();
+
+    const handleAddMeal = () => {
+        openWidget("addMeal", {
+            date: new Date(),
+            mealType: "breakfast",
+            onSuccess: () => {
+                console.log("食事が記録されました");
+            },
+        });
+    };
+
+    const handleAddInventory = () => {
+        openWidget("addInventory", {
+            onSuccess: () => {
+                console.log("食材が追加されました");
+            },
+        });
+    };
+
     return (
         <div className="bg-white/5 backdrop-blur-sm rounded-xl p-6 mb-6">
-            <h3 className="text-lg font-bold mb-4">
-                クイックアクション
-            </h3>
+            <h3 className="text-lg font-bold mb-4">クイックアクション</h3>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                <button className="flex flex-col items-center justify-center bg-blue-500/20 hover:bg-blue-500/30 transition-colors rounded-lg p-4">
+                <button
+                    className="flex flex-col items-center justify-center bg-blue-500/20 hover:bg-blue-500/30 transition-colors rounded-lg p-4"
+                    onClick={handleAddMeal}
+                >
                     <div className="w-10 h-10 rounded-full bg-blue-500/30 flex items-center justify-center mb-2">
                         <svg
                             xmlns="http://www.w3.org/2000/svg"
@@ -27,7 +50,10 @@ export default function QuickActions() {
                     <span className="text-sm">食事を記録</span>
                 </button>
 
-                <button className="flex flex-col items-center justify-center bg-emerald-500/20 hover:bg-emerald-500/30 transition-colors rounded-lg p-4">
+                <button
+                    className="flex flex-col items-center justify-center bg-emerald-500/20 hover:bg-emerald-500/30 transition-colors rounded-lg p-4"
+                    onClick={handleAddInventory}
+                >
                     <div className="w-10 h-10 rounded-full bg-emerald-500/30 flex items-center justify-center mb-2">
                         <svg
                             xmlns="http://www.w3.org/2000/svg"
