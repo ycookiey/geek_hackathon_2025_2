@@ -1,4 +1,4 @@
-// src/app/meals/page.tsx (抜粋)
+"use client";
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
