@@ -7,7 +7,7 @@ import ExpiringItems from "./components/ExpiringItems";
 import NutrientSummary from "./components/NutrientSummary";
 import MealPlanner from "./components/MealPlanner";
 import RecipeRecommendations from "./components/RecipeRecommendations";
-import LoadingState from "../inventory/components/LoadingState";
+import LoadingState from "@/components/ui/LoadingState";
 import ErrorState from "../inventory/components/ErrorState";
 import {
     DashboardProvider,
@@ -29,14 +29,6 @@ function DashboardContent() {
         refreshDashboard,
     } = useDashboard();
 
-    if (isLoading) {
-        return <LoadingState />;
-    }
-
-    if (error) {
-        return <ErrorState error={error} onRetry={refreshDashboard} />;
-    }
-
     const activeMealPlan =
         mealTab === "today" ? todayMealPlan : tomorrowMealPlan;
 
@@ -45,29 +37,37 @@ function DashboardContent() {
             <Header activeItem="dashboard" />
 
             <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-                    <div className="lg:col-span-2 flex flex-col">
-                        <QuickActions />
-                        <ExpiringItems items={expiringItems} />
-                    </div>
+                {isLoading ? (
+                    <LoadingState />
+                ) : error ? (
+                    <ErrorState error={error} onRetry={refreshDashboard} />
+                ) : (
+                    <>
+                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+                            <div className="lg:col-span-2 flex flex-col">
+                                <QuickActions />
+                                <ExpiringItems items={expiringItems} />
+                            </div>
 
-                    <div className="lg:col-span-1">
-                        <NutrientSummary
-                            nutrients={nutrients?.nutrients || []}
-                            overallPercentage={
-                                nutrients?.overallPercentage || 0
-                            }
+                            <div className="lg:col-span-1">
+                                <NutrientSummary
+                                    nutrients={nutrients?.nutrients || []}
+                                    overallPercentage={
+                                        nutrients?.overallPercentage || 0
+                                    }
+                                />
+                            </div>
+                        </div>
+
+                        <MealPlanner
+                            mealTab={mealTab}
+                            setMealTab={setMealTab}
+                            meals={activeMealPlan || undefined}
                         />
-                    </div>
-                </div>
 
-                <MealPlanner
-                    mealTab={mealTab}
-                    setMealTab={setMealTab}
-                    meals={activeMealPlan || undefined}
-                />
-
-                <RecipeRecommendations recipes={recipes} />
+                        <RecipeRecommendations recipes={recipes} />
+                    </>
+                )}
             </main>
         </div>
     );
