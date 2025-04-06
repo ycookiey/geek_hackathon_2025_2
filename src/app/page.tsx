@@ -7,10 +7,6 @@ export default function Home() {
     const router = useRouter();
     const [scrollPosition, setScrollPosition] = useState(0);
     const [isLoaded, setIsLoaded] = useState(false);
-    const [selectedIngredient, setSelectedIngredient] = useState<number | null>(
-        null
-    );
-    const [recipeHover, setRecipeHover] = useState<number | null>(null);
 
     useEffect(() => {
         setIsLoaded(true);
@@ -153,7 +149,7 @@ export default function Home() {
                             MealCopilot
                         </h1>
                         <p className="text-xl md:text-2xl text-gray-300 mb-8">
-                            栄養バランスを革新する、次世代の食事管理アプリ
+                            食生活オールインワンアプリ
                         </p>
                     </div>
 
@@ -166,10 +162,10 @@ export default function Home() {
                         style={{ transitionDelay: "0.3s" }}
                     >
                         <button className="px-8 py-4 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full text-lg font-medium transform hover:scale-105 transition-all hover:shadow-lg hover:shadow-blue-500/25">
-                            冷蔵庫を管理する
+                            食材を管理する
                         </button>
                         <button className="px-8 py-4 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full text-lg font-medium transform hover:scale-105 transition-all hover:shadow-lg hover:shadow-purple-500/25">
-                            献立を提案する
+                            レシピを提案する
                         </button>
                     </div>
                 </div>
@@ -197,8 +193,30 @@ export default function Home() {
 
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
                         <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 hover:bg-white/20 transition-all transform hover:-translate-y-2 hover:shadow-xl">
-                            <div className="w-16 h-16 mb-6 rounded-full bg-gradient-to-r from-emerald-400 to-green-500 flex items-center justify-center text-white text-2xl font-bold">
+                            <div className="w-16 h-16 mb-6 rounded-full bg-gradient-to-r from-blue-400 to-indigo-500 flex items-center justify-center text-white text-2xl font-bold">
                                 1
+                            </div>
+                            <h3 className="text-xl font-bold mb-4">食材管理</h3>
+                            <p className="text-gray-300">
+                                手持ちの食材の賞味期限を管理。無駄を減らし、効率的な食材利用をサポートします。
+                            </p>
+                        </div>
+
+                        <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 hover:bg-white/20 transition-all transform hover:-translate-y-2 hover:shadow-xl">
+                            <div className="w-16 h-16 mb-6 rounded-full bg-gradient-to-r from-pink-400 to-rose-500 flex items-center justify-center text-white text-2xl font-bold">
+                                2
+                            </div>
+                            <h3 className="text-xl font-bold mb-4">
+                                レシピ提案
+                            </h3>
+                            <p className="text-gray-300">
+                                栄養バランスと冷蔵庫の食材を考慮した、パーソナライズされたレシピを提案します。
+                            </p>
+                        </div>
+
+                        <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 hover:bg-white/20 transition-all transform hover:-translate-y-2 hover:shadow-xl">
+                            <div className="w-16 h-16 mb-6 rounded-full bg-gradient-to-r from-emerald-400 to-green-500 flex items-center justify-center text-white text-2xl font-bold">
+                                3
                             </div>
                             <h3 className="text-xl font-bold mb-4">
                                 栄養素分析
@@ -207,27 +225,228 @@ export default function Home() {
                                 日々の食事から摂取する栄養素を分析し、バランスを視覚化。不足している栄養素を特定します。
                             </p>
                         </div>
+                    </div>
+                </div>
+            </section>
 
-                        <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 hover:bg-white/20 transition-all transform hover:-translate-y-2 hover:shadow-xl">
-                            <div className="w-16 h-16 mb-6 rounded-full bg-gradient-to-r from-blue-400 to-indigo-500 flex items-center justify-center text-white text-2xl font-bold">
-                                2
+            <section className="py-20 px-6 relative overflow-hidden">
+                <div className="max-w-6xl mx-auto">
+                    <h2 className="text-3xl md:text-5xl font-bold text-center mb-6">
+                        スマートな食材管理
+                    </h2>
+                    <p className="text-xl text-center text-gray-300 mb-16 max-w-3xl mx-auto">
+                        冷蔵庫や食材棚を一元管理。賞味期限を自動で追跡し、無駄を削減します
+                    </p>
+
+                    <div className="relative bg-white/5 backdrop-blur-lg rounded-3xl p-6 md:p-10 overflow-hidden mb-6">
+                        <div className="absolute -top-20 -left-20 w-40 h-40 rounded-full bg-blue-500 opacity-10 blur-2xl"></div>
+                        <div className="absolute -bottom-20 -right-20 w-40 h-40 rounded-full bg-emerald-500 opacity-10 blur-2xl"></div>
+
+                        <div className="relative w-full bg-gradient-to-br from-black/30 to-gray-800/30 backdrop-blur-lg rounded-xl p-6 overflow-hidden">
+                            <div className="absolute top-4 right-4 flex gap-2">
+                                <span className="px-4 py-1 bg-blue-500/20 text-blue-300 rounded-full text-xs font-medium">
+                                    冷蔵
+                                </span>
+                                <span className="px-4 py-1 bg-cyan-500/20 text-cyan-300 rounded-full text-xs font-medium">
+                                    冷凍
+                                </span>
+                                <span className="px-4 py-1 bg-amber-500/20 text-amber-300 rounded-full text-xs font-medium">
+                                    常温
+                                </span>
                             </div>
-                            <h3 className="text-xl font-bold mb-4">食材管理</h3>
-                            <p className="text-gray-300">
-                                冷蔵庫内の食材を管理し、賞味期限を追跡。無駄を減らし、効率的な食材利用をサポートします。
+
+                            <h3 className="text-lg font-bold mb-8">
+                                冷蔵庫の中身{" "}
+                                <span className="text-sm text-gray-400 font-normal">
+                                    （6 アイテム）
+                                </span>
+                            </h3>
+
+                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-4">
+                                {ingredients.map((ingredient, index) => (
+                                    <div
+                                        key={index}
+                                        className={`relative p-4 rounded-lg cursor-pointer transition-all duration-300 bg-white/10 hover:bg-white/15`}
+                                    >
+                                        <div
+                                            className={`w-12 h-12 mx-auto mb-2 rounded-full ${
+                                                ingredient.category === "野菜"
+                                                    ? "bg-green-500/30"
+                                                    : ingredient.category ===
+                                                      "肉類"
+                                                    ? "bg-red-500/30"
+                                                    : ingredient.category ===
+                                                      "乳製品"
+                                                    ? "bg-blue-500/30"
+                                                    : "bg-amber-500/30"
+                                            } flex items-center justify-center`}
+                                        >
+                                            <span className="text-xl">
+                                                {ingredient.category === "野菜"
+                                                    ? "🥬"
+                                                    : ingredient.category ===
+                                                      "肉類"
+                                                    ? "🥩"
+                                                    : ingredient.category ===
+                                                      "乳製品"
+                                                    ? "🥛"
+                                                    : "🥚"}
+                                            </span>
+                                        </div>
+                                        <p className="text-center text-sm font-medium">
+                                            {ingredient.name}
+                                        </p>
+                                        {ingredient.status === "warning" && (
+                                            <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full animate-pulse"></span>
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-10">
+                        <div className="bg-white/5 backdrop-blur-sm rounded-xl p-6 border border-cyan-500/20">
+                            <div className="w-10 h-10 rounded-full bg-cyan-500/20 flex items-center justify-center mb-4">
+                                <span className="text-cyan-400 text-xl">
+                                    ⏰
+                                </span>
+                            </div>
+                            <h3 className="text-lg font-bold mb-2">
+                                賞味期限アラート
+                            </h3>
+                            <p className="text-sm text-gray-300">
+                                消費すべき食材を自動でお知らせし、食品ロスを防ぎます
                             </p>
                         </div>
 
-                        <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 hover:bg-white/20 transition-all transform hover:-translate-y-2 hover:shadow-xl">
-                            <div className="w-16 h-16 mb-6 rounded-full bg-gradient-to-r from-pink-400 to-rose-500 flex items-center justify-center text-white text-2xl font-bold">
-                                3
+                        <div className="bg-white/5 backdrop-blur-sm rounded-xl p-6 border border-emerald-500/20">
+                            <div className="w-10 h-10 rounded-full bg-emerald-500/20 flex items-center justify-center mb-4">
+                                <span className="text-emerald-400 text-xl">
+                                    📊
+                                </span>
                             </div>
-                            <h3 className="text-xl font-bold mb-4">
-                                レシピ提案
+                            <h3 className="text-lg font-bold mb-2">
+                                簡単在庫管理
                             </h3>
-                            <p className="text-gray-300">
-                                栄養バランスと冷蔵庫の食材を考慮した、パーソナライズされたレシピを提案します。
+                            <p className="text-sm text-gray-300">
+                                バーコードスキャンや音声入力で、簡単に食材を登録できます
                             </p>
+                        </div>
+
+                        <div className="bg-white/5 backdrop-blur-sm rounded-xl p-6 border border-purple-500/20">
+                            <div className="w-10 h-10 rounded-full bg-purple-500/20 flex items-center justify-center mb-4">
+                                <span className="text-purple-400 text-xl">
+                                    🔄
+                                </span>
+                            </div>
+                            <h3 className="text-lg font-bold mb-2">自動更新</h3>
+                            <p className="text-sm text-gray-300">
+                                料理を作ると自動的に使用食材を更新し、常に正確な在庫を維持します
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section className="py-20 px-6 relative overflow-hidden bg-gradient-to-b from-[#0e1b30] to-[#102036]">
+                <div className="max-w-6xl mx-auto">
+                    <h2 className="text-3xl md:text-5xl font-bold text-center mb-6">
+                        パーソナライズされたレシピ
+                    </h2>
+                    <p className="text-xl text-center text-gray-300 mb-16 max-w-3xl mx-auto">
+                        手持ちの食材と栄養バランスに基づいて、あなたにぴったりのレシピを提案します
+                    </p>
+
+                    <div className="relative">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                            {recipes.map((recipe, index) => (
+                                <div
+                                    key={index}
+                                    className="relative bg-white/5 backdrop-blur-lg rounded-2xl overflow-hidden transform transition-all duration-300 hover:shadow-xl hover:-translate-y-2"
+                                >
+                                    <div
+                                        className={`h-48 ${recipe.image} relative`}
+                                    >
+                                        <div className="absolute inset-0 bg-black/20"></div>
+                                        <div className="absolute top-4 right-4 px-3 py-1 bg-black/30 backdrop-blur-sm rounded-full text-xs font-medium">
+                                            {recipe.time}
+                                        </div>
+                                        <div className="absolute bottom-4 left-4">
+                                            <h3 className="text-xl font-bold">
+                                                {recipe.name}
+                                            </h3>
+                                        </div>
+                                    </div>
+
+                                    <div className="p-6">
+                                        <div className="flex flex-wrap gap-2 mb-4">
+                                            {recipe.ingredients.map(
+                                                (ing, i) => (
+                                                    <span
+                                                        key={i}
+                                                        className={`px-2 py-1 rounded-full text-xs ${
+                                                            ingredients.some(
+                                                                (item) =>
+                                                                    item.name ===
+                                                                    ing
+                                                            )
+                                                                ? "bg-green-500/20 text-green-300"
+                                                                : "bg-gray-600/40 text-gray-300"
+                                                        }`}
+                                                    >
+                                                        {ing}
+                                                    </span>
+                                                )
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-12">
+                            <div className="bg-white/5 backdrop-blur-sm rounded-xl p-6 border border-pink-500/20">
+                                <div className="flex items-start gap-4">
+                                    <div className="w-10 h-10 rounded-full bg-pink-500/20 flex-shrink-0 flex items-center justify-center">
+                                        <span className="text-pink-400 text-xl">
+                                            🧪
+                                        </span>
+                                    </div>
+                                    <div>
+                                        <h3 className="text-lg font-bold mb-2">
+                                            栄養素ベースの提案
+                                        </h3>
+                                        <p className="text-sm text-gray-300">
+                                            あなたに不足している栄養素を補うためのレシピを優先的に提案し、バランスの良い食事をサポートします
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="bg-white/5 backdrop-blur-sm rounded-xl p-6 border border-amber-500/20">
+                                <div className="flex items-start gap-4">
+                                    <div className="w-10 h-10 rounded-full bg-amber-500/20 flex-shrink-0 flex items-center justify-center">
+                                        <span className="text-amber-400 text-xl">
+                                            🍲
+                                        </span>
+                                    </div>
+                                    <div>
+                                        <h3 className="text-lg font-bold mb-2">
+                                            在庫を活用
+                                        </h3>
+                                        <p className="text-sm text-gray-300">
+                                            手持ちの食材を最大限に活用するレシピを提案し、食品ロスを削減します
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="mt-8 flex justify-center">
+                            <button className="px-8 py-3 bg-white/10 hover:bg-white/20 rounded-full text-base font-medium transition-all">
+                                もっとレシピを見る →
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -295,372 +514,6 @@ export default function Home() {
                 </div>
             </section>
 
-            <section className="py-20 px-6 relative overflow-hidden bg-gradient-to-b from-[#0e1b30] to-[#102036]">
-                <div className="max-w-6xl mx-auto">
-                    <h2 className="text-3xl md:text-5xl font-bold text-center mb-6">
-                        スマートな食材管理
-                    </h2>
-                    <p className="text-xl text-center text-gray-300 mb-16 max-w-3xl mx-auto">
-                        冷蔵庫や食材棚の中身を一元管理。賞味期限を自動でトラッキングし、ムダを削減します
-                    </p>
-
-                    <div className="relative bg-white/5 backdrop-blur-lg rounded-3xl p-6 md:p-10 overflow-hidden mb-6">
-                        <div className="absolute -top-20 -left-20 w-40 h-40 rounded-full bg-blue-500 opacity-10 blur-2xl"></div>
-                        <div className="absolute -bottom-20 -right-20 w-40 h-40 rounded-full bg-emerald-500 opacity-10 blur-2xl"></div>
-
-                        <div className="relative w-full bg-gradient-to-br from-black/30 to-gray-800/30 backdrop-blur-lg rounded-xl p-6 overflow-hidden">
-                            <div className="absolute top-4 right-4 flex gap-2">
-                                <span className="px-4 py-1 bg-blue-500/20 text-blue-300 rounded-full text-xs font-medium">
-                                    冷蔵
-                                </span>
-                                <span className="px-4 py-1 bg-cyan-500/20 text-cyan-300 rounded-full text-xs font-medium">
-                                    冷凍
-                                </span>
-                                <span className="px-4 py-1 bg-amber-500/20 text-amber-300 rounded-full text-xs font-medium">
-                                    常温
-                                </span>
-                            </div>
-
-                            <h3 className="text-lg font-bold mb-8">
-                                冷蔵庫の中身{" "}
-                                <span className="text-sm text-gray-400 font-normal">
-                                    （6 アイテム）
-                                </span>
-                            </h3>
-
-                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-4">
-                                {ingredients.map((ingredient, index) => (
-                                    <div
-                                        key={index}
-                                        className={`relative p-4 rounded-lg cursor-pointer transition-all duration-300 ${
-                                            selectedIngredient === index
-                                                ? "bg-white/20 scale-105 shadow-lg"
-                                                : "bg-white/10 hover:bg-white/15"
-                                        }`}
-                                        onClick={() =>
-                                            setSelectedIngredient(
-                                                selectedIngredient === index
-                                                    ? null
-                                                    : index
-                                            )
-                                        }
-                                    >
-                                        <div
-                                            className={`w-12 h-12 mx-auto mb-2 rounded-full ${
-                                                ingredient.category === "野菜"
-                                                    ? "bg-green-500/30"
-                                                    : ingredient.category ===
-                                                      "肉類"
-                                                    ? "bg-red-500/30"
-                                                    : ingredient.category ===
-                                                      "乳製品"
-                                                    ? "bg-blue-500/30"
-                                                    : "bg-amber-500/30"
-                                            } flex items-center justify-center`}
-                                        >
-                                            <span className="text-xl">
-                                                {ingredient.category === "野菜"
-                                                    ? "🥬"
-                                                    : ingredient.category ===
-                                                      "肉類"
-                                                    ? "🥩"
-                                                    : ingredient.category ===
-                                                      "乳製品"
-                                                    ? "🥛"
-                                                    : "🥚"}
-                                            </span>
-                                        </div>
-                                        <p className="text-center text-sm font-medium">
-                                            {ingredient.name}
-                                        </p>
-                                        {ingredient.status === "warning" && (
-                                            <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full animate-pulse"></span>
-                                        )}
-
-                                        {selectedIngredient === index && (
-                                            <div className="absolute top-full left-0 right-0 mt-2 p-3 bg-gray-800/90 backdrop-blur-sm rounded-lg z-10 shadow-xl">
-                                                <p className="text-xs mb-1">
-                                                    <span className="text-gray-400">
-                                                        カテゴリ:
-                                                    </span>{" "}
-                                                    {ingredient.category}
-                                                </p>
-                                                <p className="text-xs mb-1">
-                                                    <span className="text-gray-400">
-                                                        保存場所:
-                                                    </span>{" "}
-                                                    {ingredient.location}
-                                                </p>
-                                                <p className="text-xs">
-                                                    <span className="text-gray-400">
-                                                        賞味期限:
-                                                    </span>{" "}
-                                                    <span
-                                                        className={
-                                                            ingredient.status ===
-                                                            "warning"
-                                                                ? "text-red-400 font-bold"
-                                                                : ""
-                                                        }
-                                                    >
-                                                        {ingredient.expiry}
-                                                    </span>
-                                                </p>
-                                            </div>
-                                        )}
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-10">
-                        <div className="bg-white/5 backdrop-blur-sm rounded-xl p-6 border border-cyan-500/20">
-                            <div className="w-10 h-10 rounded-full bg-cyan-500/20 flex items-center justify-center mb-4">
-                                <span className="text-cyan-400 text-xl">
-                                    ⏰
-                                </span>
-                            </div>
-                            <h3 className="text-lg font-bold mb-2">
-                                賞味期限アラート
-                            </h3>
-                            <p className="text-sm text-gray-300">
-                                消費すべき食材を自動でお知らせし、食品ロスを防ぎます
-                            </p>
-                        </div>
-
-                        <div className="bg-white/5 backdrop-blur-sm rounded-xl p-6 border border-emerald-500/20">
-                            <div className="w-10 h-10 rounded-full bg-emerald-500/20 flex items-center justify-center mb-4">
-                                <span className="text-emerald-400 text-xl">
-                                    📊
-                                </span>
-                            </div>
-                            <h3 className="text-lg font-bold mb-2">
-                                簡単在庫管理
-                            </h3>
-                            <p className="text-sm text-gray-300">
-                                バーコードスキャンや音声入力で、簡単に食材を登録できます
-                            </p>
-                        </div>
-
-                        <div className="bg-white/5 backdrop-blur-sm rounded-xl p-6 border border-purple-500/20">
-                            <div className="w-10 h-10 rounded-full bg-purple-500/20 flex items-center justify-center mb-4">
-                                <span className="text-purple-400 text-xl">
-                                    🔄
-                                </span>
-                            </div>
-                            <h3 className="text-lg font-bold mb-2">自動更新</h3>
-                            <p className="text-sm text-gray-300">
-                                料理を作ると自動的に使用食材を更新し、常に正確な在庫を維持します
-                            </p>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            <section className="py-20 px-6 relative overflow-hidden">
-                <div className="max-w-6xl mx-auto">
-                    <h2 className="text-3xl md:text-5xl font-bold text-center mb-6">
-                        パーソナライズされたレシピ
-                    </h2>
-                    <p className="text-xl text-center text-gray-300 mb-16 max-w-3xl mx-auto">
-                        冷蔵庫の中身と栄養バランスに基づいて、あなたにぴったりのレシピを提案します
-                    </p>
-
-                    <div className="relative">
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                            {recipes.map((recipe, index) => (
-                                <div
-                                    key={index}
-                                    className="relative bg-white/5 backdrop-blur-lg rounded-2xl overflow-hidden transform transition-all duration-300 hover:shadow-xl hover:-translate-y-2"
-                                    onMouseEnter={() => setRecipeHover(index)}
-                                    onMouseLeave={() => setRecipeHover(null)}
-                                >
-                                    <div
-                                        className={`h-48 ${recipe.image} relative`}
-                                    >
-                                        <div className="absolute inset-0 bg-black/20"></div>
-                                        <div className="absolute top-4 right-4 px-3 py-1 bg-black/30 backdrop-blur-sm rounded-full text-xs font-medium">
-                                            {recipe.time}
-                                        </div>
-                                        <div className="absolute bottom-4 left-4">
-                                            <h3 className="text-xl font-bold">
-                                                {recipe.name}
-                                            </h3>
-                                        </div>
-                                    </div>
-
-                                    <div className="p-6">
-                                        <div className="flex flex-wrap gap-2 mb-4">
-                                            {recipe.ingredients.map(
-                                                (ing, i) => (
-                                                    <span
-                                                        key={i}
-                                                        className={`px-2 py-1 rounded-full text-xs ${
-                                                            ingredients.some(
-                                                                (item) =>
-                                                                    item.name ===
-                                                                    ing
-                                                            )
-                                                                ? "bg-green-500/20 text-green-300"
-                                                                : "bg-gray-600/40 text-gray-300"
-                                                        }`}
-                                                    >
-                                                        {ing}
-                                                    </span>
-                                                )
-                                            )}
-                                        </div>
-
-                                        <div className="flex justify-between items-center">
-                                            <div className="text-sm text-gray-400">
-                                                栄養スコア
-                                            </div>
-                                            <div className="w-24 h-2 bg-gray-700 rounded-full overflow-hidden">
-                                                <div
-                                                    className="h-full bg-gradient-to-r from-blue-500 to-cyan-400"
-                                                    style={{
-                                                        width: `${
-                                                            (recipe.nutrition
-                                                                .protein +
-                                                                recipe.nutrition
-                                                                    .carbs +
-                                                                recipe.nutrition
-                                                                    .fat +
-                                                                recipe.nutrition
-                                                                    .fiber) /
-                                                            4
-                                                        }%`,
-                                                    }}
-                                                ></div>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    {recipeHover === index && (
-                                        <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/50 to-black/70 backdrop-blur-sm flex flex-col justify-center items-center p-6 transition-opacity duration-200">
-                                            <h4 className="text-xl font-bold mb-6 text-center">
-                                                {recipe.name}
-                                            </h4>
-
-                                            <div className="grid grid-cols-2 gap-x-8 gap-y-4 mb-8">
-                                                <div className="text-center">
-                                                    <div className="w-12 h-12 mx-auto rounded-full border-4 border-green-500 flex items-center justify-center">
-                                                        <span className="text-sm">
-                                                            {
-                                                                recipe.nutrition
-                                                                    .protein
-                                                            }
-                                                            %
-                                                        </span>
-                                                    </div>
-                                                    <p className="text-xs mt-1 text-gray-300">
-                                                        タンパク質
-                                                    </p>
-                                                </div>
-
-                                                <div className="text-center">
-                                                    <div className="w-12 h-12 mx-auto rounded-full border-4 border-blue-500 flex items-center justify-center">
-                                                        <span className="text-sm">
-                                                            {
-                                                                recipe.nutrition
-                                                                    .carbs
-                                                            }
-                                                            %
-                                                        </span>
-                                                    </div>
-                                                    <p className="text-xs mt-1 text-gray-300">
-                                                        炭水化物
-                                                    </p>
-                                                </div>
-
-                                                <div className="text-center">
-                                                    <div className="w-12 h-12 mx-auto rounded-full border-4 border-yellow-500 flex items-center justify-center">
-                                                        <span className="text-sm">
-                                                            {
-                                                                recipe.nutrition
-                                                                    .fat
-                                                            }
-                                                            %
-                                                        </span>
-                                                    </div>
-                                                    <p className="text-xs mt-1 text-gray-300">
-                                                        脂質
-                                                    </p>
-                                                </div>
-
-                                                <div className="text-center">
-                                                    <div className="w-12 h-12 mx-auto rounded-full border-4 border-purple-500 flex items-center justify-center">
-                                                        <span className="text-sm">
-                                                            {
-                                                                recipe.nutrition
-                                                                    .fiber
-                                                            }
-                                                            %
-                                                        </span>
-                                                    </div>
-                                                    <p className="text-xs mt-1 text-gray-300">
-                                                        食物繊維
-                                                    </p>
-                                                </div>
-                                            </div>
-
-                                            <button className="px-6 py-2 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full text-sm font-medium">
-                                                レシピを見る
-                                            </button>
-                                        </div>
-                                    )}
-                                </div>
-                            ))}
-                        </div>
-
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-12">
-                            <div className="bg-white/5 backdrop-blur-sm rounded-xl p-6 border border-pink-500/20">
-                                <div className="flex items-start gap-4">
-                                    <div className="w-10 h-10 rounded-full bg-pink-500/20 flex-shrink-0 flex items-center justify-center">
-                                        <span className="text-pink-400 text-xl">
-                                            🧪
-                                        </span>
-                                    </div>
-                                    <div>
-                                        <h3 className="text-lg font-bold mb-2">
-                                            栄養素ベースの提案
-                                        </h3>
-                                        <p className="text-sm text-gray-300">
-                                            あなたに不足している栄養素を補うためのレシピを優先的に提案し、バランスの良い食事をサポートします
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="bg-white/5 backdrop-blur-sm rounded-xl p-6 border border-amber-500/20">
-                                <div className="flex items-start gap-4">
-                                    <div className="w-10 h-10 rounded-full bg-amber-500/20 flex-shrink-0 flex items-center justify-center">
-                                        <span className="text-amber-400 text-xl">
-                                            🍲
-                                        </span>
-                                    </div>
-                                    <div>
-                                        <h3 className="text-lg font-bold mb-2">
-                                            在庫活用レシピ
-                                        </h3>
-                                        <p className="text-sm text-gray-300">
-                                            冷蔵庫にある食材を最大限に活用するレシピを提案し、食品ロスを削減します
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="mt-8 flex justify-center">
-                            <button className="px-8 py-3 bg-white/10 hover:bg-white/20 rounded-full text-base font-medium transition-all">
-                                もっとレシピを見る →
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
             <section className="py-20 px-6 relative bg-gradient-to-b from-[#0e1b30] to-[#0f172a]">
                 <div className="absolute inset-0 overflow-hidden">
                     <div className="absolute -top-20 -right-20 w-80 h-80 rounded-full bg-blue-500 opacity-10 blur-3xl"></div>
@@ -671,8 +524,10 @@ export default function Home() {
                     <h2 className="text-3xl md:text-5xl font-bold mb-8">
                         健康的な食生活を始めましょう
                     </h2>
+                    <p className="text-xl text-gray-300  max-w-2xl mx-auto">
+                        食品管理の効率化、レシピの発見、そして栄養バランスの改善。
+                    </p>
                     <p className="text-xl text-gray-300 mb-12 max-w-2xl mx-auto">
-                        栄養バランスの改善、食品管理の効率化、そして美味しいレシピの発見。
                         すべてが一つのアプリで可能に。
                     </p>
 
