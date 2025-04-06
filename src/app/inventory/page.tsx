@@ -17,7 +17,7 @@ import {
     getCategoryInfo,
     getCategoryItemCount,
 } from "./utils/inventoryUtils";
-import LoadingState from "./components/LoadingState";
+import LoadingState from "@/components/ui/LoadingState";
 import ErrorState from "./components/ErrorState";
 
 function InventoryPageContent() {
