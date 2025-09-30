@@ -1,0 +1,57 @@
+# template.yaml (抜粋例)
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Backend API for the application
+
+Globals:
+  Function:
+    Timeout: 10
+    Runtime: nodejs18.x # Node.jsのバージョンに合わせてください
+    Environment:
+      Variables:
+        INVENTORY_TABLE_NAME: InventoryItem # テーブル名を環境変数で渡す
+        # ローカル実行時のみ DynamoDB Local を使うようにする
+        # SAM CLI v1.16 以降では SAM_CLI_DOCKER_NETWORK で Docker ネットワークを指定可能
+        # または、ローカル実行時のみこの値を設定する
+        DYNAMODB_ENDPOINT: 'http://dynamodb:8000' # Docker Composeネットワーク内から接続する場合
+        # SAM CLIをホストから実行し、Docker内のDynamoDBに接続する場合は以下
+        # DYNAMODB_ENDPOINT: 'http://host.docker.internal:8000' # Docker Desktopの場合
+        # DYNAMODB_ENDPOINT: 'http://172.17.0.1:8000' # Linux Docker ブリッジのデフォルトIPの場合（要確認）
+        # 最も簡単なのは sam local start-api 実行時に環境変数を渡すか、コード内で localhost を使うこと
+
+# template.yaml の修正例 (tsc で事前ビルドする場合)
+Resources:
+  InventoryListFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      # CodeUri: lambda/functions/inventory/ # ★ list.ts が含まれるディレクトリを指定
+      # または、lambda関数がすべて functions 以下にあるなら
+      CodeUri: lambda/functions/ # ★ Lambda関数コードのルートディレクトリ
+      Handler: inventory/list.handler # ★ CodeUriからの相対パス + ファイル名.handler
+      Runtime: nodejs18.x
+      Architectures: [ x86_64 ] # または arm64 (環境に合わせて)
+      Environment:
+        Variables:
+          INVENTORY_TABLE_NAME: InventoryItem
+          DYNAMODB_ENDPOINT: 'http://host.docker.internal:8000' # ローカルテスト用
+      Events:
+        ListInventoryApi:
+          Type: HttpApi
+          Properties:
+            Path: /api/inventory
+            Method: GET
+    Metadata: # ★★★ これを追加 ★★★
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: false       # デバッグしやすいように圧縮しない
+        Target: "es2022"    # tsconfig.json の target と合わせる
+        Sourcemap: true     # ソースマップを出力 (デバッグ用)
+        Format: cjs         # CommonJS 形式で出力 (tsconfig.json と合わせる)
+        OutExtension:       # 出力ファイルの拡張子を .js にする
+          - .js=.js
+        # ★★★ エントリーポイントを指定 (CodeUri からの相対パス) ★★★
+        EntryPoints:
+          - inventory/list.ts # ここを Handler のパスに合わせて調整
+        # ★ 依存関係をどう扱うか (通常はバンドルされる) ★
+        # Bundle: true # デフォルトで true
+        # External: ["@aws-sdk/*"] # AWS SDK は Lambda ランタイムに含まれるので除外する場合 (デプロイサイズ削減)
